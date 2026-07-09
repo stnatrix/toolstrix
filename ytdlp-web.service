@@ -1,0 +1,26 @@
+[Unit]
+Description=yt-dlp web (personal)
+After=network.target
+
+[Service]
+Type=simple
+User=ytdlpweb
+Group=ytdlpweb
+WorkingDirectory=/opt/ytdlp-web
+Environment="YTDLP_TOKEN=bbdd4bfcc306b8a725e69187429b3b74d8641ba0b87c155d"
+ExecStart=/opt/ytdlp-web/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8099 --workers 1
+Restart=on-failure
+RestartSec=5
+
+# ограничения ресурсов — сервак слабый (1 CPU / 1GB RAM)
+MemoryMax=350M
+CPUQuota=70%
+
+# базовая изоляция, не мешает работе yt-dlp/ffmpeg
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target

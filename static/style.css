@@ -1,0 +1,462 @@
+/* ==========================================================================
+   NATRIX — design tokens
+   ========================================================================== */
+:root {
+  --bg: #0a0e14;
+  --bg-elevated: #0d1219;
+  --card: #12161f;
+  --card-border: #1e2430;
+  --text: #e4e7ec;
+  --text-dim: #6b7280;
+  --text-faint: #3f4653;
+
+  --dlp: #5eead4;
+  --dlp-dim: #2dd4bf33;
+  --mpeg: #f97066;
+  --mpeg-dim: #f9706633;
+  --pass: #b4befe;
+  --pass-dim: #b4befe33;
+
+  --danger: #f87171;
+  --ok: #4ade80;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --font-body: 'Inter', -apple-system, sans-serif;
+
+  --shadow-lift: 0 8px 30px -8px rgba(0, 0, 0, 0.6);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 800px 500px at 20% -10%, #5eead40d, transparent),
+    radial-gradient(ellipse 800px 500px at 80% 0%, #f970660d, transparent),
+    radial-gradient(ellipse 800px 500px at 50% 100%, #b4befe08, transparent);
+  background-attachment: fixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   Header + section switcher
+   ========================================================================== */
+.natrix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--card-border);
+  flex-wrap: wrap;
+}
+
+.natrix-logo {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.natrix-logo .dot { color: var(--text-faint); margin: 0 2px; }
+
+/* the "hardware switch" — signature element */
+.switcher {
+  position: relative;
+  display: inline-flex;
+  background: var(--bg-elevated);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 4px;
+  gap: 4px;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.switcher button {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 9px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.25s ease;
+}
+
+.switcher button:hover { color: var(--text); }
+
+.switcher .thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(33.333% - 4px);
+  border-radius: var(--radius-sm);
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1), background 0.35s ease, box-shadow 0.35s ease;
+  z-index: 1;
+}
+
+.switcher[data-active="dlp"] .thumb {
+  transform: translateX(0);
+  background: linear-gradient(180deg, #6ee7d7, #34d3bd);
+  box-shadow: 0 0 20px -2px var(--dlp), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.switcher[data-active="mpeg"] .thumb {
+  transform: translateX(100%);
+  background: linear-gradient(180deg, #fb8880, #ef5c50);
+  box-shadow: 0 0 20px -2px var(--mpeg), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.switcher[data-active="pass"] .thumb {
+  transform: translateX(200%);
+  background: linear-gradient(180deg, #c396fa, #a77df5);
+  box-shadow: 0 0 20px -2px var(--pass), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.switcher[data-active="dlp"] button[data-tab="dlp"],
+.switcher[data-active="mpeg"] button[data-tab="mpeg"],
+.switcher[data-active="pass"] button[data-tab="pass"] {
+  color: #0a0e14;
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+.natrix-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.section { display: none; animation: fade-up 0.4s ease; }
+.section.active { display: block; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+#section-dlp .section-eyebrow { color: var(--dlp); }
+#section-mpeg .section-eyebrow { color: var(--mpeg); }
+#section-pass .section-eyebrow { color: var(--pass); }
+
+.section-title {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.section-title .dot {
+  font-family: var(--font-mono);
+  margin: 0 1px;
+  font-weight: 700;
+}
+#section-dlp .section-title .dot { color: var(--dlp); }
+#section-mpeg .section-title .dot { color: var(--mpeg); }
+#section-pass .section-title .dot { color: var(--pass); }
+
+.section-sub {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   Cards / shared components
+   ========================================================================== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-lift);
+}
+
+.field-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+input[type="text"], input[type="url"], input[type="number"], select {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus {
+  border-color: var(--dlp);
+  box-shadow: 0 0 0 3px var(--dlp-dim);
+}
+#section-mpeg input:focus, #section-mpeg select:focus {
+  border-color: var(--mpeg);
+  box-shadow: 0 0 0 3px var(--mpeg-dim);
+}
+#section-pass input:focus, #section-pass select:focus {
+  border-color: var(--pass);
+  box-shadow: 0 0 0 3px var(--pass-dim);
+}
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 12px 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-dlp {
+  background: linear-gradient(180deg, #6ee7d7, #34d3bd);
+  color: #06201c;
+  box-shadow: 0 0 24px -6px var(--dlp);
+}
+.btn-dlp:hover:not(:disabled) { box-shadow: 0 0 32px -4px var(--dlp); }
+
+.btn-mpeg {
+  background: linear-gradient(180deg, #fb8880, #ef5c50);
+  color: #2b0a06;
+  box-shadow: 0 0 24px -6px var(--mpeg);
+}
+.btn-mpeg:hover:not(:disabled) { box-shadow: 0 0 32px -4px var(--mpeg); }
+
+.btn-pass {
+  background: linear-gradient(180deg, #c396fa, #a77df5);
+  color: #1c0533;
+  box-shadow: 0 0 24px -6px var(--pass);
+}
+.btn-pass:hover:not(:disabled) { box-shadow: 0 0 32px -4px var(--pass); }
+
+.btn-ghost {
+  background: var(--bg-elevated);
+  border-color: var(--card-border);
+  color: var(--text-dim);
+}
+.btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text-faint); }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* mode toggle (dlp: quick / advanced) */
+.mode-toggle {
+  display: inline-flex;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  margin-bottom: 20px;
+}
+.mode-toggle button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.mode-toggle button.active { background: var(--dlp-dim); color: var(--dlp); }
+
+/* progress bar */
+.progress-wrap {
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 16px 0;
+  display: none;
+}
+.progress-wrap.active { display: block; }
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+#section-dlp .progress-bar { background: linear-gradient(90deg, #34d3bd, #6ee7d7); }
+#section-mpeg .progress-bar { background: linear-gradient(90deg, #ef5c50, #fb8880); }
+
+.status-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  min-height: 18px;
+}
+.status-line.error { color: var(--danger); }
+.status-line.ok { color: var(--ok); }
+
+/* dropzone */
+.dropzone {
+  border: 2px dashed var(--card-border);
+  border-radius: var(--radius);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.dropzone:hover, .dropzone.drag-over {
+  border-color: var(--mpeg);
+  background: var(--mpeg-dim);
+  color: var(--text);
+}
+.dropzone input { display: none; }
+
+/* tool grid for mpeg */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.tool-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 12px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.tool-btn:hover { border-color: var(--mpeg); }
+.tool-btn.selected { border-color: var(--mpeg); background: var(--mpeg-dim); }
+.tool-btn .tool-name { font-weight: 600; font-size: 13px; display: block; }
+.tool-btn .tool-desc { font-size: 11px; color: var(--text-dim); display: block; margin-top: 2px; }
+
+video, img.preview {
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+  display: block;
+  margin: 16px 0;
+  background: #000;
+}
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
+
+.hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 6px;
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+  border: 1px solid var(--card-border);
+}
+
+.natrix-footer {
+  position: relative;
+  text-align: center;
+  padding: 30px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.natrix-footer .footer-version {
+  position: absolute;
+  right: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.35;
+}
+
+@media (max-width: 600px) {
+  .natrix-footer .footer-version {
+    position: static;
+    transform: none;
+    margin-top: 8px;
+    display: block;
+  }
+}
+
+/* range slider custom */
+#section-pass input[type="range"] {
+  -webkit-appearance: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--card-border);
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  margin: 12px 0;
+}
+#section-pass input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pass);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--pass-dim);
+  transition: transform 0.1s;
+}
+#section-pass input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+#section-pass .mode-toggle button.active { background: var(--pass-dim); color: var(--pass); }
