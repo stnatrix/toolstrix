@@ -14,6 +14,8 @@
   --dlp-dim: #2dd4bf33;
   --mpeg: #f97066;
   --mpeg-dim: #f9706633;
+  --compress: #fbbf24;
+  --compress-dim: #fbbf2433;
   --pass: #b4befe;
   --pass-dim: #b4befe33;
 
@@ -99,7 +101,9 @@ body {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  padding: 9px 18px;
+  width: 90px;
+  padding: 9px 0;
+  text-align: center;
   border: none;
   background: transparent;
   color: var(--text-dim);
@@ -115,7 +119,7 @@ body {
   top: 4px;
   bottom: 4px;
   left: 4px;
-  width: calc(33.333% - 4px);
+  width: calc(25% - 4px);
   border-radius: var(--radius-sm);
   transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1), background 0.35s ease, box-shadow 0.35s ease;
   z-index: 1;
@@ -127,18 +131,24 @@ body {
   box-shadow: 0 0 20px -2px var(--dlp), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .switcher[data-active="mpeg"] .thumb {
-  transform: translateX(100%);
+  transform: translateX(calc(100% + 4px));
   background: linear-gradient(180deg, #fb8880, #ef5c50);
   box-shadow: 0 0 20px -2px var(--mpeg), inset 0 1px 0 rgba(255,255,255,0.3);
 }
+.switcher[data-active="compress"] .thumb {
+  transform: translateX(calc(200% + 8px));
+  background: linear-gradient(180deg, #fcd34d, #f59e0b);
+  box-shadow: 0 0 20px -2px var(--compress), inset 0 1px 0 rgba(255,255,255,0.3);
+}
 .switcher[data-active="pass"] .thumb {
-  transform: translateX(200%);
+  transform: translateX(calc(300% + 12px));
   background: linear-gradient(180deg, #c396fa, #a77df5);
   box-shadow: 0 0 20px -2px var(--pass), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 
 .switcher[data-active="dlp"] button[data-tab="dlp"],
 .switcher[data-active="mpeg"] button[data-tab="mpeg"],
+.switcher[data-active="compress"] button[data-tab="compress"],
 .switcher[data-active="pass"] button[data-tab="pass"] {
   color: #0a0e14;
 }
@@ -237,6 +247,10 @@ input:focus, select:focus {
   border-color: var(--mpeg);
   box-shadow: 0 0 0 3px var(--mpeg-dim);
 }
+#section-compress input:focus, #section-compress select:focus {
+  border-color: var(--compress);
+  box-shadow: 0 0 0 3px var(--compress-dim);
+}
 #section-pass input:focus, #section-pass select:focus {
   border-color: var(--pass);
   box-shadow: 0 0 0 3px var(--pass-dim);
@@ -276,6 +290,13 @@ input:focus, select:focus {
   box-shadow: 0 0 24px -6px var(--pass);
 }
 .btn-pass:hover:not(:disabled) { box-shadow: 0 0 32px -4px var(--pass); }
+
+.btn-compress {
+  background: linear-gradient(180deg, #fcd34d, #f59e0b);
+  color: #2e1c01;
+  box-shadow: 0 0 24px -6px var(--compress);
+}
+.btn-compress:hover:not(:disabled) { box-shadow: 0 0 32px -4px var(--compress); }
 
 .btn-ghost {
   background: var(--bg-elevated);
@@ -460,3 +481,43 @@ video, img.preview {
   transform: scale(1.2);
 }
 #section-pass .mode-toggle button.active { background: var(--pass-dim); color: var(--pass); }
+
+/* ==========================================================================
+   COMPRESS Custom Elements
+   ========================================================================== */
+.size-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.size-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--card-border);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.size-btn:hover {
+  border-color: var(--compress);
+  color: var(--text);
+}
+.size-btn.active {
+  border-color: var(--compress);
+  background: var(--compress-dim);
+  color: var(--text);
+}
+#section-compress .dropzone.drag-over {
+  border-color: var(--compress);
+  background: var(--compress-dim);
+}
+#section-compress .badge {
+  background: var(--compress-dim);
+  color: var(--compress);
+}

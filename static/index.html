@@ -16,6 +16,7 @@
     <div class="thumb"></div>
     <button data-tab="dlp" type="button">dlp</button>
     <button data-tab="mpeg" type="button">mpeg</button>
+    <button data-tab="compress" type="button">compress</button>
     <button data-tab="pass" type="button">pass</button>
   </div>
 </header>
@@ -93,6 +94,102 @@
         <div id="mpeg-result-preview"></div>
         <div class="btn-row" style="margin-top:12px;">
           <a class="btn btn-mpeg" id="mpeg-download-btn" download>Скачать</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ COMPRESS ============================ -->
+  <section class="section" id="section-compress">
+    <div class="section-eyebrow">// local video compression</div>
+    <h1 class="section-title">natrix<span class="dot">.</span>compress</h1>
+    <p class="section-sub">Умное сжатие видео под нужный размер (ffmpeg.wasm в браузере).</p>
+
+    <!-- Upload Card -->
+    <div class="card" id="compress-upload-card">
+      <label class="field-label">Файл видео</label>
+      <div class="dropzone" id="compress-dropzone">
+        <input type="file" id="compress-file-input" accept="video/*">
+        <div id="compress-dropzone-text">Перетащи видео сюда, либо нажми для выбора</div>
+      </div>
+      <div class="status-line" id="compress-load-status"></div>
+    </div>
+
+    <!-- Workspace (hidden by default) -->
+    <div id="compress-workspace" style="display:none;">
+      <div class="card">
+        <div id="compress-preview-wrap"></div>
+        <div class="badge" id="compress-file-info"></div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">Целевой размер (МБ)</label>
+        <div class="size-grid" id="compress-size-grid">
+          <button type="button" class="size-btn" data-size="8">8 МБ</button>
+          <button type="button" class="size-btn active" data-size="25">25 МБ</button>
+          <button type="button" class="size-btn" data-size="50">50 МБ</button>
+          <button type="button" class="size-btn" data-size="100">100 МБ</button>
+          <button type="button" class="size-btn" id="compress-custom-btn" data-size="custom">Свой...</button>
+        </div>
+
+        <!-- Custom size input wrapper (hidden by default) -->
+        <div id="compress-custom-size-wrap" style="display: none; margin-bottom: 16px;">
+          <label class="field-label" for="compress-custom-size">Введите размер в МБ</label>
+          <input type="number" id="compress-custom-size" min="1" step="0.5" value="25">
+        </div>
+
+        <!-- Options -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+          <div>
+            <label class="field-label" for="compress-opt-scale">Максимальное разрешение</label>
+            <select id="compress-opt-scale" style="width: 100%;">
+              <option value="auto" selected>Авто (подбор под размер)</option>
+              <option value="1080">1080p (Full HD)</option>
+              <option value="720">720p (HD)</option>
+              <option value="480">480p (SD)</option>
+              <option value="360">360p</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="compress-opt-audio">Аудиодорожка</label>
+            <select id="compress-opt-audio" style="width: 100%;">
+              <option value="keep" selected>Оригинальный звук (лучше)</option>
+              <option value="mono64">Сжать звук (64k Mono - экономия)</option>
+              <option value="mute">Без звука (максимальное сжатие)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <label class="field-label" for="compress-opt-preset">Пресет скорости сжатия</label>
+          <select id="compress-opt-preset" style="width: 100%;">
+            <option value="veryfast">Очень быстро (качество хуже)</option>
+            <option value="medium" selected>Средний (рекомендуется)</option>
+            <option value="slow">Медленный (качество лучше)</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Bitrate Info / Warning -->
+        <div class="hint" id="compress-bitrate-info" style="margin-top: 16px; font-family: var(--font-mono); font-size: 11px;"></div>
+
+        <div class="progress-wrap" id="compress-progress-wrap" style="margin-top: 20px;">
+          <div class="progress-bar" id="compress-progress-bar"></div>
+        </div>
+        <div class="status-line" id="compress-status"></div>
+
+        <div class="btn-row" style="margin-top: 20px;">
+          <button class="btn btn-compress" id="compress-run-btn" type="button" style="flex: 1;">Сжать видео</button>
+          <button class="btn btn-ghost" id="compress-reset-btn" type="button">Другой файл</button>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div class="card" id="compress-result-card" style="display:none;">
+        <label class="field-label">Сжатый результат</label>
+        <div id="compress-result-preview"></div>
+        <div class="badge" id="compress-result-info" style="margin-top: 10px; display: inline-block;"></div>
+        <div class="btn-row" style="margin-top:16px;">
+          <a class="btn btn-compress" id="compress-download-btn" download style="text-align: center; text-decoration: none;">Скачать результат</a>
         </div>
       </div>
     </div>
@@ -214,14 +311,16 @@
 
 <footer class="natrix-footer">
   stnatrix frankfurt. all rights reserved
-  <span class="footer-version">v0.8</span>
+  <span class="footer-version">v0.82</span>
 </footer>
 
 <!-- ffmpeg.wasm: всё самохостится, никаких cross-origin проблем -->
 <script src="/static/ffmpeg/ffmpeg.js?v=1.0.2"></script>
+<script src="/static/ffmpeg-helper.js?v=1.0.3"></script>
 
 <script src="/static/dlp.js?v=1.0.3"></script>
 <script src="/static/mpeg.js?v=1.0.3"></script>
+<script src="/static/compress.js?v=1.0.3"></script>
 <script src="/static/pass.js?v=1.0.3"></script>
 <script src="/static/app.js?v=1.0.3"></script>
 </body>

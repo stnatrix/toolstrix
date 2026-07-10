@@ -49,7 +49,7 @@ def get_formats(url: str, t: str = Query(default="")):
         "no_warnings": True,
         "skip_download": True,
         "noplaylist": True,
-        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+        "remote_components": ["ejs:github"],
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -114,7 +114,7 @@ def _download(url: str, format_selector: str, audio_only: bool) -> Path:
         "outtmpl": outtmpl,
         "format": format_selector,
         "restrictfilenames": False,
-        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+        "remote_components": ["ejs:github"],
     }
 
     if audio_only:

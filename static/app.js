@@ -7,6 +7,7 @@
   const sections = {
     dlp: document.getElementById('section-dlp'),
     mpeg: document.getElementById('section-mpeg'),
+    compress: document.getElementById('section-compress'),
     pass: document.getElementById('section-pass'),
   };
 

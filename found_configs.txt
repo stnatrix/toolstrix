@@ -1,0 +1,6 @@
+D:\gemini\natrix-project\GEMINI.md
+D:\gemini\natrix-project\.agents\skills\ytdlp-web-dev\SKILL.md
+C:\Users\natrix852\.gemini\config\skills\global-rules\SKILL.md
+C:\Users\natrix852\.gemini\antigravity\builtin\skills\antigravity_guide\SKILL.md
+C:\Users\natrix852\.gemini\antigravity-backup\builtin\skills\antigravity_guide\SKILL.md
+C:\Users\natrix852\.gemini\antigravity-ide\builtin\skills\antigravity_guide\SKILL.md

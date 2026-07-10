@@ -259,21 +259,32 @@
     generate();
   }
 
-  // Cryptographically secure random helper
+  // Cryptographically secure random helper (rejection sampling — no modulo bias)
   function getRandomInt(max) {
     if (max <= 0) return 0;
-    const array = new Uint32Array(1);
-    window.crypto.getRandomValues(array);
-    return array[0] % max;
+    const limit = Math.floor(0x100000000 / max) * max;
+    let val;
+    do {
+      const arr = new Uint32Array(1);
+      window.crypto.getRandomValues(arr);
+      val = arr[0];
+    } while (val >= limit);
+    return val % max;
   }
 
   // Generate logic
   function generate() {
     let pwd = '';
+    let entropy = 0;
+
     if (currentMode === 'pass') {
       pwd = generatePassword();
+      entropy = calculatePasswordEntropy(pwd);
     } else {
       pwd = generatePassphrase();
+      // Энтропия фразы = кол-во слов × log2(размер словаря)
+      const list = WORDLISTS[settings.phrase.lang] || WORDLISTS.en;
+      entropy = settings.phrase.words * Math.log2(list.length);
     }
 
     if (!els.display) return;
@@ -287,8 +298,6 @@
 
     els.display.textContent = pwd;
     els.display.style.color = 'var(--text)';
-    
-    const entropy = calculateEntropy(pwd);
     updateStrength(entropy);
     addToHistory(pwd);
   }
@@ -358,11 +367,12 @@
     return words.join(sep);
   }
 
-  function calculateEntropy(pwd) {
+  // Расчёт энтропии для паролей (по символьному пулу)
+  function calculatePasswordEntropy(pwd) {
     if (!pwd) return 0;
     let poolSize = 0;
     let upper = false, lower = false, nums = false, syms = false;
-    for (let char of pwd) {
+    for (const char of pwd) {
       if (/[A-Z]/.test(char)) upper = true;
       else if (/[a-z]/.test(char)) lower = true;
       else if (/[0-9]/.test(char)) nums = true;
@@ -371,8 +381,8 @@
     if (upper) poolSize += 26;
     if (lower) poolSize += 26;
     if (nums) poolSize += 10;
-    if (syms) poolSize += 26;
-    
+    if (syms) poolSize += 27; // !@#$%^&*()_+-=[]{}|;:,.<>? — 27 символов
+
     if (poolSize === 0) return 0;
     return pwd.length * Math.log2(poolSize);
   }
