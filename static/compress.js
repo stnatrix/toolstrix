@@ -308,10 +308,16 @@ const COMPRESS = (() => {
       console.log('[compress] running ffmpeg with args:', args.join(' '));
 
       setStatus('Сжатие видео (это может занять время)...', false);
-      await ffmpeg.exec(args);
+      const exitCode = await ffmpeg.exec(args);
+      if (exitCode !== 0) {
+        throw new Error(`FFmpeg завершил работу с кодом ошибки ${exitCode}. Проверьте консоль для деталей.`);
+      }
 
       setStatus('Чтение готового файла...', false);
       const data = await ffmpeg.readFile(outputName);
+      if (!data || data.length === 0) {
+        throw new Error('Получен пустой файл на выходе. Возможно, неверные параметры или кодек.');
+      }
       
       resultBlob = new Blob([data.buffer], { type: 'video/mp4' });
       showResult(outputName);
@@ -351,6 +357,12 @@ const COMPRESS = (() => {
 
     const args = ['-i', inputName];
 
+    // Explicit stream mapping with optional audio to prevent crashes if video is muted
+    args.push('-map', '0:v');
+    if (audioMode !== 'mute') {
+      args.push('-map', '0:a?');
+    }
+
     // Scale filter
     let scaleHeight = null;
     if (el.optScale.value === 'auto') {
@@ -371,9 +383,10 @@ const COMPRESS = (() => {
       args.push('-vf', `scale=-2:${scaleHeight}`);
     }
 
-    // Video codec and bitrate limiters
+    // Video codec, pixel format, and bitrate limiters
     args.push(
       '-c:v', 'libx264',
+      '-pix_fmt', 'yuv420p',
       '-b:v', `${videoBitrateKbps}k`,
       '-maxrate', `${videoBitrateKbps}k`,
       '-bufsize', `${videoBitrateKbps * 2}k`,
