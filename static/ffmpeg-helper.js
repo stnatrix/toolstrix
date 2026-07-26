@@ -9,6 +9,16 @@ window.natrixSharedFFmpeg = (function () {
   let _loadingPromise = null;
   let activeProgressListener = null;
 
+  // Ядро собрано в multi-thread варианте. Если не задать -threads явно, libx264
+  // просит потоков по числу ядер, в пуле pthread'ов их столько нет — и кодирование
+  // намертво встаёт после первого кадра (ffmpeg.exec никогда не резолвится).
+  // Любое явное небольшое значение снимает дедлок; ограничиваем сверху четырьмя.
+  const THREADS = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+
+  // Ядро ~32МБ + компиляция wasm: на медленном соединении минуты. Но висеть
+  // вечно нельзя — если воркер не поднялся, ffmpeg.load() не реджектится сам.
+  const LOAD_TIMEOUT_MS = 180000;
+
   async function ensure(statusCallback) {
     if (ffmpegReady) return ffmpeg;
     if (_loadingPromise) {
@@ -37,7 +47,11 @@ window.natrixSharedFFmpeg = (function () {
         if (statusCallback) statusCallback('Загружаю ядро ffmpeg (3/3 — worker)...', false);
         const workerURL = await _toBlobURL(`${BASE}/ffmpeg-core.worker.js`, 'text/javascript');
 
-        await ffmpeg.load({ coreURL, wasmURL, workerURL });
+        await withTimeout(
+          ffmpeg.load({ coreURL, wasmURL, workerURL }),
+          LOAD_TIMEOUT_MS,
+          'ffmpeg не ответил за 3 минуты — воркер не запустился. Обнови страницу с очисткой кэша (Ctrl+F5).'
+        );
         ffmpegReady = true;
         if (statusCallback) statusCallback('', false);
         return ffmpeg;
@@ -61,6 +75,53 @@ window.natrixSharedFFmpeg = (function () {
     return URL.createObjectURL(new Blob([buf], { type: mimeType }));
   }
 
+  function withTimeout(promise, ms, message) {
+    let timer;
+    return Promise.race([
+      promise.finally(() => clearTimeout(timer)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      }),
+    ]);
+  }
+
+  // Единая точка запуска ffmpeg: гарантирует, что ядро загружено и что -threads
+  // задан явно (иначе кодирование зависает — см. комментарий к THREADS).
+  //
+  // Важно: -threads вставляется ПЕРЕД именем выходного файла. Перед -i это
+  // входная опция, она ограничивает только декодер — энкодер продолжает
+  // запрашивать потоки по числу ядер и всё так же виснет. Проверено:
+  // "-i in -c:v libx264 -threads 2 out" -> код 0, "-threads 2 -i in ... out" -> дедлок.
+  async function exec(args) {
+    const ff = await ensure();
+    let finalArgs = args;
+    if (!args.includes('-threads')) {
+      finalArgs = [...args];
+      finalArgs.splice(finalArgs.length - 1, 0, '-threads', String(THREADS));
+    }
+    let code;
+    try {
+      code = await ff.exec(finalArgs);
+    } catch (e) {
+      // Падение внутри wasm (например "memory access out of bounds") убивает
+      // воркер насовсем: без сброса вкладка становится нерабочей до перезагрузки.
+      // Сбрасываем состояние, чтобы следующая операция подняла свежее ядро.
+      reset();
+      throw e;
+    }
+    if (code !== 0) {
+      throw new Error(`ffmpeg завершился с кодом ${code}. Подробности — в консоли браузера.`);
+    }
+    return code;
+  }
+
+  function reset() {
+    try { if (ffmpeg) ffmpeg.terminate(); } catch (e) { /* воркер уже мёртв */ }
+    ffmpeg = null;
+    ffmpegReady = false;
+    _loadingPromise = null;
+  }
+
   function setProgressListener(callback) {
     activeProgressListener = callback;
   }
@@ -80,6 +141,9 @@ window.natrixSharedFFmpeg = (function () {
 
   return {
     ensure,
+    exec,
+    reset,
+    threads: THREADS,
     isReady: () => ffmpegReady,
     getFFmpeg: () => ffmpeg,
     setProgressListener,

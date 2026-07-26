@@ -308,18 +308,17 @@ const COMPRESS = (() => {
       console.log('[compress] running ffmpeg with args:', args.join(' '));
 
       setStatus('Сжатие видео (это может занять время)...', false);
-      const exitCode = await ffmpeg.exec(args);
-      if (exitCode !== 0) {
-        throw new Error(`FFmpeg завершил работу с кодом ошибки ${exitCode}. Проверьте консоль для деталей.`);
-      }
+      // через общий exec — он подставляет -threads (без него x264 в wasm виснет)
+      // и сам бросает исключение на ненулевом коде возврата
+      await window.natrixSharedFFmpeg.exec(args);
 
       setStatus('Чтение готового файла...', false);
       const data = await ffmpeg.readFile(outputName);
       if (!data || data.length === 0) {
         throw new Error('Получен пустой файл на выходе. Возможно, неверные параметры или кодек.');
       }
-      
-      resultBlob = new Blob([data.buffer], { type: 'video/mp4' });
+
+      resultBlob = new Blob([data], { type: 'video/mp4' });
       showResult(outputName);
 
       // cleanup WASM files
@@ -333,7 +332,118 @@ const COMPRESS = (() => {
       console.error(err);
       setStatus('Ошибка при сжатии: ' + (err.message || err), true);
       setProgress(0);
+
+      // Auto-trigger confirmation for server fallback
+      setTimeout(() => {
+        if (confirm("Локальное сжатие в браузере не удалось (вероятно, кодек AV1 или HEVC не поддерживается вашим браузером/WASM).\n\nХотите загрузить видео на сервер для сжатия? (Сжатие выполнится на сервере с помощью native ffmpeg).")) {
+          runServerCompression();
+        }
+      }, 100);
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runServerCompression() {
+    setBusy(true);
+    setProgress(0);
+    setStatus('Загрузка видео на сервер для сжатия...', false);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('t') || '';
+
+    // Calculate parameters (exactly matching the client calculation)
+    const duration = currentFile.duration;
+    const safetyMargin = 0.93;
+    const targetSizeBits = targetSizeMB * 8 * 1024 * 1024 * safetyMargin;
+
+    let audioBitrateKbps = 128;
+    const audioMode = el.optAudio.value;
+    if (audioMode === 'mono64') {
+      audioBitrateKbps = 64;
+    } else if (audioMode === 'mute') {
+      audioBitrateKbps = 0;
+    }
+
+    const totalTargetBitrateKbps = Math.round(targetSizeBits / duration / 1000);
+    let videoBitrateKbps = totalTargetBitrateKbps - audioBitrateKbps;
+    if (videoBitrateKbps < 50) videoBitrateKbps = 50;
+
+    let scaleHeight = 0;
+    if (el.optScale.value === 'auto') {
+      if (videoBitrateKbps < 300) {
+        scaleHeight = 360;
+      } else if (videoBitrateKbps < 600) {
+        scaleHeight = 480;
+      } else if (videoBitrateKbps < 1200) {
+        scaleHeight = 720;
+      }
+    } else {
+      scaleHeight = parseInt(el.optScale.value);
+    }
+    // Only scale down, never upscale
+    if (scaleHeight && currentFile.height <= scaleHeight) {
+      scaleHeight = 0;
+    }
+
+    const formData = new FormData();
+    formData.append('file', currentFile.blob, currentFile.name);
+    formData.append('video_bitrate_kbps', videoBitrateKbps);
+    formData.append('target_height', scaleHeight);
+    formData.append('audio_mode', audioMode);
+    formData.append('preset', el.optPreset.value);
+
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api/compress?t=${encodeURIComponent(token)}`, true);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          setProgress(pct);
+          setStatus(`Загрузка на сервер: ${pct}%...`, false);
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          setStatus('Получение сжатого файла...', false);
+          setProgress(0);
+          resultBlob = xhr.response;
+          showResult('output.mp4');
+          setStatus('Видео успешно сжато на сервере!', false);
+        } else {
+          let errText = 'Неизвестная ошибка сервера.';
+          try {
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                const parsed = JSON.parse(reader.result);
+                errText = parsed.detail || errText;
+              } catch (e) {
+                errText = reader.result || errText;
+              }
+              setStatus('Ошибка сервера: ' + errText, true);
+            };
+            reader.readAsText(xhr.response);
+          } catch (e) {
+            setStatus('Ошибка сервера: ' + xhr.statusText, true);
+          }
+        }
+        setBusy(false);
+      };
+
+      xhr.onerror = () => {
+        setStatus('Ошибка сети при загрузке на сервер.', true);
+        setBusy(false);
+      };
+
+      xhr.responseType = 'blob';
+      xhr.send(formData);
+
+    } catch (err) {
+      console.error(err);
+      setStatus('Ошибка при отправке: ' + err.message, true);
       setBusy(false);
     }
   }
@@ -408,8 +518,13 @@ const COMPRESS = (() => {
     return args;
   }
 
+  let resultUrl = null;
+
   function showResult(outputName) {
+    // предыдущий результат больше не нужен — иначе blob'ы копятся в памяти вкладки
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
     const url = URL.createObjectURL(resultBlob);
+    resultUrl = url;
     el.resultPreview.innerHTML = '';
     
     const v = document.createElement('video');

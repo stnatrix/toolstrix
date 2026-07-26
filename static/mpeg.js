@@ -355,7 +355,10 @@ const MPEG = (() => {
           return ['-i', inputName, '-vf', 'fps=12,scale=480:-1:flags=lanczos', out];
         }
         if (fmt === 'webm') {
-          return ['-i', inputName, '-c:v', 'libvpx-vp9', '-crf', '32', '-b:v', '0', '-c:a', 'libopus', out];
+          // libvpx-vp9 в этой сборке ffmpeg-core стабильно валится с
+          // "memory access out of bounds" — даже на 640x360 и с -threads 1.
+          // VP8 + Vorbis кодируется нормально, поэтому webm делаем через него.
+          return ['-i', inputName, '-c:v', 'libvpx', '-crf', '30', '-b:v', '1M', '-c:a', 'libvorbis', out];
         }
         return ['-i', inputName, '-c:v', 'libx264', '-c:a', 'aac', out];
       },
@@ -527,14 +530,16 @@ const MPEG = (() => {
       if (ctx.actualOutputName) outputName = ctx.actualOutputName;
 
       setStatus('Обрабатываю...', false);
-      await ffmpeg.exec(args);
+      // через общий exec — он подставляет -threads и проверяет код возврата
+      await window.natrixSharedFFmpeg.exec(args);
 
       const data = await ffmpeg.readFile(outputName);
-      const mime = currentFile.kind === 'video'
-        ? (ctx.outExt === 'gif' ? 'image/gif' : 'video/' + (ctx.outExt || currentFile.ext))
-        : 'image/' + (ctx.outExt || currentFile.ext);
+      if (!data || !data.length) {
+        throw new Error('ffmpeg вернул пустой файл — проверь параметры инструмента.');
+      }
+      const mime = mimeFor(ctx.outExt || currentFile.ext, currentFile.kind);
 
-      resultBlob = new Blob([data.buffer], { type: mime });
+      resultBlob = new Blob([data], { type: mime });
       showResult(outputName, mime);
 
       // cleanup wasm FS
@@ -552,10 +557,29 @@ const MPEG = (() => {
     }
   }
 
+  // Расширение != mime: 'video/mkv' и 'image/jpg' не существуют, и <video>/<img>
+  // с таким типом отказываются проигрывать результат.
+  const MIME_BY_EXT = {
+    mp4: 'video/mp4', mov: 'video/mp4', m4v: 'video/mp4',
+    webm: 'video/webm', mkv: 'video/x-matroska', avi: 'video/x-msvideo',
+    gif: 'image/gif', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    webp: 'image/webp', bmp: 'image/bmp',
+  };
+
+  function mimeFor(ext, kind) {
+    return MIME_BY_EXT[String(ext).toLowerCase()]
+      || (kind === 'video' ? 'video/mp4' : 'image/png');
+  }
+
+  let resultUrl = null;
+
   function showResult(outputName, mime) {
+    // предыдущий результат больше не нужен — иначе blob'ы копятся в памяти вкладки
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
     const url = URL.createObjectURL(resultBlob);
+    resultUrl = url;
     el.resultPreview.innerHTML = '';
-    if (mime.startsWith('video/') && mime !== 'image/gif') {
+    if (mime.startsWith('video/')) {
       const v = document.createElement('video');
       v.src = url;
       v.controls = true;

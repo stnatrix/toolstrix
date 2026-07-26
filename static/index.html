@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>stnatrix.space</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css?v=1.0.5">
+<!-- Шрифты самохостятся в /static/fonts — внешних запросов у страницы нет.
+     Это обязательно: под COEP require-corp (нужен для SharedArrayBuffer)
+     ресурсы с fonts.googleapis.com всё равно были бы заблокированы. -->
+<link rel="stylesheet" href="/static/style.css?v=1.0.9">
 </head>
 <body>
 
@@ -284,9 +285,10 @@
         <div>
           <label class="field-label">Словарь</label>
           <select id="pass-lang-select" style="width: 100%;">
-            <option value="en">English</option>
-            <option value="ru">Русский (транслит)</option>
+            <option value="en">English — EFF, 7776 слов (12.9 бит/слово)</option>
+            <option value="ru">Русский транслит — 51 слово (5.7 бит/слово)</option>
           </select>
+          <div class="hint">Стойкость фразы = слов × бит на слово. Русский список короткий и нужен для «красивых» фраз, а не для защиты: 4 слова из него дают всего 23 бита.</div>
         </div>
       </div>
 
@@ -311,17 +313,19 @@
 
 <footer class="natrix-footer">
   stnatrix frankfurt. all rights reserved
-  <span class="footer-version">v0.82</span>
+  <span class="footer-version">v0.83</span>
 </footer>
 
 <!-- ffmpeg.wasm: всё самохостится, никаких cross-origin проблем -->
 <script src="/static/ffmpeg/ffmpeg.js?v=1.0.2"></script>
-<script src="/static/ffmpeg-helper.js?v=1.0.5"></script>
+<script src="/static/ffmpeg-helper.js?v=1.0.9"></script>
 
-<script src="/static/dlp.js?v=1.0.5"></script>
-<script src="/static/mpeg.js?v=1.0.5"></script>
-<script src="/static/compress.js?v=1.0.5"></script>
-<script src="/static/pass.js?v=1.0.5"></script>
-<script src="/static/app.js?v=1.0.5"></script>
+<script src="/static/dlp.js?v=1.0.9"></script>
+<script src="/static/mpeg.js?v=1.0.9"></script>
+<script src="/static/compress.js?v=1.0.9"></script>
+<!-- словарь должен быть загружен до pass.js: тот читает window.NATRIX_WORDLIST_EN -->
+<script src="/static/wordlist-en.js?v=1.0.9"></script>
+<script src="/static/pass.js?v=1.0.9"></script>
+<script src="/static/app.js?v=1.0.9"></script>
 </body>
 </html>

@@ -23,15 +23,15 @@
   };
 
   // Wordlists for Passphrases
+  //
+  // Размер словаря — это и есть стойкость фразы: log2(N) бит на слово.
+  // Английский словарь — EFF Long Wordlist (7776 слов, 12.9 бит/слово),
+  // подключается отдельным файлом wordlist-en.js.
+  // Русский транслит — короткий мнемонический список на 51 слово, это всего
+  // 5.7 бит/слово: 4 слова = 23 бита, что подбирается за секунды. Он оставлен
+  // как «красивый», а не стойкий вариант, и подписан в UI соответственно.
   const WORDLISTS = {
-    en: [
-      "cozy", "lofi", "chill", "rain", "coffee", "cloud", "sunset", "dream", "autumn", "sleepy", 
-      "warm", "mug", "vinyl", "jazz", "retro", "mist", "drizzle", "cup", "tea", "book", 
-      "sweater", "window", "sofa", "candle", "shadow", "night", "stars", "moon", "quiet", "peace", 
-      "forest", "wind", "leaf", "waves", "sand", "shell", "ocean", "sky", "comfy", "blanket", 
-      "socks", "fireplace", "cocoa", "steam", "morning", "dawn", "dusk", "glowing", "soft", "gentle", 
-      "breeze", "melody", "tune", "acoustic", "notes", "ambient", "calm", "whisper", "echo", "spark"
-    ],
+    en: Array.isArray(window.NATRIX_WORDLIST_EN) ? window.NATRIX_WORDLIST_EN : null,
     ru: [
       "uyut", "lofi", "chay", "kofe", "dozhd", "veter", "osen", "zakat", "rassvet", "mechta", 
       "son", "kniga", "pled", "svecha", "ten", "noch", "zvezda", "luna", "tishina", "les", 
@@ -283,8 +283,7 @@
     } else {
       pwd = generatePassphrase();
       // Энтропия фразы = кол-во слов × log2(размер словаря)
-      const list = WORDLISTS[settings.phrase.lang] || WORDLISTS.en;
-      entropy = settings.phrase.words * Math.log2(list.length);
+      entropy = settings.phrase.words * Math.log2(activeWordlist().length);
     }
 
     if (!els.display) return;
@@ -355,8 +354,14 @@
     return arr.join('');
   }
 
+  // Словарь может не подгрузиться (wordlist-en.js не отдался) — тогда честно
+  // откатываемся на короткий русский список, а не падаем с TypeError.
+  function activeWordlist() {
+    return WORDLISTS[settings.phrase.lang] || WORDLISTS.en || WORDLISTS.ru;
+  }
+
   function generatePassphrase() {
-    const list = WORDLISTS[settings.phrase.lang] || WORDLISTS.en;
+    const list = activeWordlist();
     const count = settings.phrase.words;
     const sep = settings.phrase.sep;
     

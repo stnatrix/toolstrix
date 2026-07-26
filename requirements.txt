@@ -1,4 +1,11 @@
-fastapi==0.115.6
-uvicorn==0.32.1
-yt-dlp==2025.6.9
+fastapi>=0.115.6
+uvicorn>=0.32.1
 python-multipart>=0.0.9
+
+# ВАЖНО: yt-dlp намеренно НЕ закреплён.
+# YouTube регулярно ломает извлечение, и старая версия просто перестаёт работать
+# ("Requested format is not available"). Проверено: 2025.6.9 уже не тянет YouTube,
+# 2026.7.4 — тянет. Обновлять на VPS регулярно:
+#   sudo -u ytdlpweb /opt/ytdlp-web/venv/bin/pip install -U yt-dlp
+#   sudo systemctl restart ytdlp-web
+yt-dlp>=2026.7.4

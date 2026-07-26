@@ -5,22 +5,56 @@ yt-dlp web — личный сервис для скачивания видео/
 
 import os
 import re
+import secrets
 import shutil
 import tempfile
 import subprocess
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import FastAPI, Query, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi import FastAPI, Query, HTTPException, UploadFile, Form
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import yt_dlp
 
 APP_TOKEN = os.environ.get("YTDLP_TOKEN", "")  # секретный токен, задаётся в systemd unit
 TMP_DIR = Path(tempfile.gettempdir()) / "ytdlp-web"
-TMP_DIR.mkdir(exist_ok=True)
+TMP_DIR.mkdir(parents=True, exist_ok=True)
+STATIC_DIR = Path(__file__).parent / "static"
+
+# максимальный размер загружаемого на сервер файла для /api/compress
+MAX_UPLOAD_BYTES = int(os.environ.get("YTDLP_MAX_UPLOAD_MB", "512")) * 1024 * 1024
 
 app = FastAPI(title="yt-dlp web")
+
+
+# ---------- Cross-origin isolation ----------
+# ffmpeg.wasm собран в multi-thread варианте (ffmpeg-core.worker.js) и требует
+# SharedArrayBuffer. SharedArrayBuffer доступен только на cross-origin isolated
+# странице, то есть при COOP: same-origin + COEP: require-corp. Без этих
+# заголовков natrix.mpeg и natrix.compress падают с
+# "SharedArrayBuffer is not defined" ещё на этапе загрузки ядра.
+#
+# Заголовки ставит само приложение, а не nginx — так проект остаётся рабочим
+# при любом способе развёртывания (напрямую uvicorn, через прокси, локально).
+# require-corp безопасен, потому что все ресурсы страницы (шрифты, ffmpeg)
+# самохостятся — внешних запросов у фронтенда нет.
+@app.middleware("http")
+async def cross_origin_isolation(request, call_next):
+    response = await call_next(request)
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+
+    # Статика обязана ревалидироваться. Ответ, закэшированный браузером ДО того,
+    # как появились заголовки выше, под require-corp отдаётся как
+    # ERR_BLOCKED_BY_RESPONSE — и ffmpeg.wasm намертво отказывается стартовать,
+    # хотя сервер уже отвечает правильно. Воркер-чанк ffmpeg тянет сам себя по
+    # фиксированному URL, ?v= к нему не приделать, поэтому единственная надёжная
+    # страховка — no-cache (кэш остаётся, но каждый раз проверяется через ETag).
+    if request.url.path.startswith("/static/"):
+        response.headers.setdefault("Cache-Control", "no-cache")
+    return response
 
 
 # ---------- Авторизация по токену в URL/заголовке ----------
@@ -28,7 +62,8 @@ def check_token(token: str | None):
     if not APP_TOKEN:
         # если токен не задан в окружении — считаем это ошибкой конфигурации, а не "открыто для всех"
         raise HTTPException(500, "Server misconfigured: token not set")
-    if token != APP_TOKEN:
+    # compare_digest — постоянное время сравнения, не даёт подобрать токен по таймингам
+    if not secrets.compare_digest(token or "", APP_TOKEN):
         raise HTTPException(403, "Forbidden")
 
 
@@ -36,8 +71,9 @@ def check_token(token: str | None):
 @app.get("/", response_class=HTMLResponse)
 def index(t: str = Query(default="")):
     check_token(t)
-    html = (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
-    return HTMLResponse(html)
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    # страница содержит токен в URL — она не должна оседать в кэшах/прокси
+    return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
 # ---------- Получить список доступных форматов (для ПК-режима) ----------
@@ -100,6 +136,7 @@ def get_formats(url: str, t: str = Query(default="")):
 # ---------- Скачивание ----------
 def _safe_filename(name: str) -> str:
     name = re.sub(r'[\\/*?:"<>|]', "_", name)
+    name = name.strip(" .")  # ".." и хвостовые точки/пробелы недопустимы как имя файла
     return name[:150]
 
 
@@ -134,11 +171,16 @@ def _download(url: str, format_selector: str, audio_only: bool) -> Path:
         shutil.rmtree(session_dir, ignore_errors=True)
         raise HTTPException(400, f"Ошибка скачивания: {e}")
 
-    files = list(session_dir.iterdir())
+    # yt-dlp может оставить в папке служебные огрызки (.part, .ytdl, отдельные
+    # дорожки до merge) — берём самый большой готовый файл, а не первый попавшийся
+    files = [
+        f for f in session_dir.iterdir()
+        if f.is_file() and f.suffix.lower() not in {".part", ".ytdl", ".temp"}
+    ]
     if not files:
         shutil.rmtree(session_dir, ignore_errors=True)
         raise HTTPException(500, "Файл не найден после скачивания")
-    return files[0]
+    return max(files, key=lambda f: f.stat().st_size)
 
 
 @app.get("/api/download")
@@ -176,6 +218,126 @@ def download(
         background=BackgroundTask(cleanup),
     )
     ascii_fallback = filename.encode("ascii", "ignore").decode() or "download"
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="{ascii_fallback}"; '
+        f"filename*=UTF-8''{quote(filename)}"
+    )
+    return response
+
+
+# ---------- Серверное сжатие (fallback, когда ffmpeg.wasm в браузере не справился) ----------
+ALLOWED_PRESETS = {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow"}
+ALLOWED_AUDIO_MODES = {"keep", "mono64", "mute"}
+COMPRESS_TIMEOUT_SEC = int(os.environ.get("YTDLP_COMPRESS_TIMEOUT", "600"))
+
+
+@app.post("/api/compress")
+async def api_compress(
+    file: UploadFile,
+    t: str = Query(default=""),
+    video_bitrate_kbps: int = Form(...),
+    target_height: int = Form(...),
+    audio_mode: str = Form(...),
+    preset: str = Form(...),
+):
+    check_token(t)
+
+    if preset not in ALLOWED_PRESETS:
+        raise HTTPException(400, f"Недопустимый preset: {preset}")
+    if audio_mode not in ALLOWED_AUDIO_MODES:
+        raise HTTPException(400, f"Недопустимый audio_mode: {audio_mode}")
+    if not 50 <= video_bitrate_kbps <= 100_000:
+        raise HTTPException(400, "video_bitrate_kbps вне допустимого диапазона")
+    if target_height and not 0 < target_height <= 4320:
+        raise HTTPException(400, "target_height вне допустимого диапазона")
+
+    # имя приходит от клиента — нельзя подставлять его в путь как есть
+    # (".." или "/" увели бы запись за пределы session_dir)
+    safe_name = _safe_filename(Path(file.filename or "upload").name) or "upload"
+
+    session_dir = Path(tempfile.mkdtemp(dir=TMP_DIR))
+    input_filepath = session_dir / safe_name
+    output_filepath = session_dir / f"compressed_{Path(safe_name).stem}.mp4"
+
+    try:
+        # Save uploaded file, обрывая заведомо неподъёмные для VPS загрузки
+        written = 0
+        with open(input_filepath, "wb") as buffer:
+            while chunk := await file.read(1024 * 1024):
+                written += len(chunk)
+                if written > MAX_UPLOAD_BYTES:
+                    raise HTTPException(
+                        413, f"Файл больше лимита {MAX_UPLOAD_BYTES // (1024 * 1024)} МБ"
+                    )
+                buffer.write(chunk)
+
+        # Build command
+        cmd = [
+            "ffmpeg",
+            "-i", str(input_filepath),
+            "-map", "0:v"
+        ]
+
+        if audio_mode != "mute":
+            cmd.extend(["-map", "0:a?"])
+            
+        if target_height > 0:
+            cmd.extend(["-vf", f"scale=-2:{target_height}"])
+            
+        cmd.extend([
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-b:v", f"{video_bitrate_kbps}k",
+            "-maxrate", f"{video_bitrate_kbps}k",
+            "-bufsize", f"{video_bitrate_kbps * 2}k",
+            "-preset", preset
+        ])
+        
+        if audio_mode == "mute":
+            cmd.extend(["-an"])
+        elif audio_mode == "mono64":
+            cmd.extend(["-c:a", "aac", "-b:a", "64k", "-ac", "1"])
+        else:
+            cmd.extend(["-c:a", "aac", "-b:a", "128k"])
+            
+        # -threads именно здесь, как выходная опция: перед -i он ограничил бы
+        # только декодер, а держать в узде надо энкодер — на VPS одно ядро и
+        # CPUQuota=70%, иначе x264 разведёт потоков по числу ядер хоста.
+        cmd.extend(["-threads", "1", "-y", str(output_filepath)])
+
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=COMPRESS_TIMEOUT_SEC)
+        if res.returncode != 0:
+            # в stderr ffmpeg пишет мегабайты лога — клиенту нужен только хвост
+            raise HTTPException(500, f"FFmpeg failed: {res.stderr[-800:]}")
+
+        if not output_filepath.exists() or output_filepath.stat().st_size == 0:
+            raise HTTPException(500, "Output file is empty or missing after conversion")
+
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(session_dir, ignore_errors=True)
+        raise HTTPException(504, "FFmpeg conversion timed out")
+    except HTTPException:
+        # осмысленный код/текст уже сформирован выше — не заворачиваем его в 500
+        shutil.rmtree(session_dir, ignore_errors=True)
+        raise
+    except Exception as e:
+        shutil.rmtree(session_dir, ignore_errors=True)
+        raise HTTPException(500, f"Conversion error: {e}")
+
+
+    def cleanup():
+        shutil.rmtree(session_dir, ignore_errors=True)
+        
+    from starlette.background import BackgroundTask
+    
+    response = FileResponse(
+        path=output_filepath,
+        media_type="video/mp4",
+        background=BackgroundTask(cleanup),
+    )
+    
+    filename = output_filepath.name
+    ascii_fallback = filename.encode("ascii", "ignore").decode() or "compressed"
     response.headers["Content-Disposition"] = (
         f'attachment; filename="{ascii_fallback}"; '
         f"filename*=UTF-8''{quote(filename)}"
