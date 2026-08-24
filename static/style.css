@@ -214,7 +214,7 @@ html, body {
 }
 
 /* ==========================================================================
-   MUTED, HARMONIZED LIVING GRADIENT ENVIRONMENT
+   LIVING SMOKY NEBULA GRADIENT (MASSIVE 80-90% VIEWPORT COVERAGE)
    ========================================================================== */
 .grainient-bg {
   position: fixed;
@@ -222,79 +222,76 @@ html, body {
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, #070a14 0%, #030408 100%);
 }
 
 .ambient-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(150px);
+  filter: blur(130px);
   mix-blend-mode: screen;
   pointer-events: none;
   will-change: transform;
 }
 
-/* 1. Top-Left: Muted Indigo/Teal behind Title */
+/* 1. Top-Left: Dusty Indigo & Deep Teal behind Title */
 .blob-top-left {
-  width: 950px;
-  height: 950px;
-  top: -240px;
-  left: -200px;
-  background: radial-gradient(circle, rgba(100, 70, 210, 0.45) 0%, rgba(30, 130, 170, 0.25) 50%, transparent 72%);
-  opacity: 0.65;
+  width: 70vw;
+  height: 70vw;
+  min-width: 950px;
+  min-height: 950px;
+  top: -25vw;
+  left: -20vw;
+  background: radial-gradient(circle, hsla(265, 45%, 32%, 0.52) 0%, hsla(195, 46%, 30%, 0.35) 45%, transparent 75%);
   animation: blobFloat1 35s ease-in-out infinite alternate;
 }
 
-/* 2. Center-Right: Dusty Rose / Plum */
+/* 2. Center-Right: Smoky Rose / Dusty Plum */
 .blob-center-right {
-  width: 980px;
-  height: 850px;
-  top: 18%;
-  right: -220px;
-  background: radial-gradient(circle, rgba(180, 60, 130, 0.38) 0%, rgba(130, 50, 160, 0.22) 50%, transparent 72%);
-  opacity: 0.55;
+  width: 65vw;
+  height: 65vw;
+  min-width: 900px;
+  min-height: 900px;
+  top: 10vh;
+  right: -18vw;
+  background: radial-gradient(circle, hsla(335, 42%, 32%, 0.48) 0%, hsla(280, 38%, 28%, 0.32) 50%, transparent 75%);
   animation: blobFloat2 45s ease-in-out infinite alternate;
 }
 
-/* 3. Bottom-Left: Muted Deep Teal Pool */
+/* 3. Bottom-Left: Deep Smoky Teal Nebula */
 .blob-bottom-left {
-  width: 1200px;
-  height: 950px;
-  bottom: -280px;
-  left: -220px;
-  background: radial-gradient(circle, rgba(20, 130, 160, 0.55) 0%, rgba(30, 80, 160, 0.35) 55%, transparent 75%);
-  opacity: 0.75;
+  width: 75vw;
+  height: 75vw;
+  min-width: 1050px;
+  min-height: 1050px;
+  bottom: -22vw;
+  left: -18vw;
+  background: radial-gradient(circle, hsla(190, 48%, 32%, 0.55) 0%, hsla(220, 44%, 28%, 0.38) 50%, transparent 75%);
   animation: blobFloat3 28s ease-in-out infinite alternate;
 }
 
-/* 4. Bottom-Right: Deep Indigo & Dusty Violet */
+/* 4. Bottom-Right: Deep Indigo & Burnt Amber Glow */
 .blob-bottom-right {
-  width: 1280px;
-  height: 1000px;
-  bottom: -300px;
-  right: -220px;
-  background: radial-gradient(circle, rgba(90, 50, 190, 0.55) 0%, rgba(150, 45, 120, 0.35) 50%, transparent 80%);
-  opacity: 0.75;
+  width: 80vw;
+  height: 80vw;
+  min-width: 1100px;
+  min-height: 1100px;
+  bottom: -25vw;
+  right: -18vw;
+  background: radial-gradient(circle, hsla(260, 45%, 32%, 0.52) 0%, hsla(25, 48%, 30%, 0.35) 45%, hsla(330, 38%, 28%, 0.2) 65%, transparent 80%);
   animation: blobFloat4 38s ease-in-out infinite alternate;
 }
 
-/* 5. Center-Bottom: Soft Cool Blue/Cyan Diffuse */
+/* 5. Center-Bottom: Cool Ambient Pool */
 .blob-bottom-center {
-  width: 1350px;
-  height: 850px;
-  bottom: -240px;
-  left: 8%;
-  background: radial-gradient(ellipse, rgba(40, 140, 190, 0.45) 0%, rgba(80, 60, 170, 0.3) 45%, transparent 75%);
-  opacity: 0.65;
+  width: 85vw;
+  height: 65vw;
+  min-width: 1200px;
+  min-height: 850px;
+  bottom: -20vw;
+  left: 8vw;
+  background: radial-gradient(ellipse, hsla(200, 50%, 34%, 0.5) 0%, hsla(250, 40%, 30%, 0.35) 45%, transparent 75%);
   animation: blobFloat5 55s ease-in-out infinite alternate;
-}
-
-/* Soft dark film layer to prevent overexposure where blobs intersect */
-.grainient-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(3, 4, 7, 0.22);
-  pointer-events: none;
 }
 
 /* Fluid Drift Keyframes */
