@@ -17,7 +17,6 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import yt_dlp
 
-APP_TOKEN = os.environ.get("YTDLP_TOKEN", "")  # секретный токен, задаётся в systemd unit
 TMP_DIR = Path(tempfile.gettempdir()) / "ytdlp-web"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR = Path(__file__).parent / "static"
@@ -25,7 +24,7 @@ STATIC_DIR = Path(__file__).parent / "static"
 # максимальный размер загружаемого на сервер файла для /api/compress
 MAX_UPLOAD_BYTES = int(os.environ.get("YTDLP_MAX_UPLOAD_MB", "512")) * 1024 * 1024
 
-app = FastAPI(title="yt-dlp web")
+app = FastAPI(title="natrix tools")
 
 
 # ---------- Cross-origin isolation ----------
@@ -57,29 +56,16 @@ async def cross_origin_isolation(request, call_next):
     return response
 
 
-# ---------- Авторизация по токену в URL/заголовке ----------
-def check_token(token: str | None):
-    if not APP_TOKEN:
-        # если токен не задан в окружении — считаем это ошибкой конфигурации, а не "открыто для всех"
-        raise HTTPException(500, "Server misconfigured: token not set")
-    # compare_digest — постоянное время сравнения, не даёт подобрать токен по таймингам
-    if not secrets.compare_digest(token or "", APP_TOKEN):
-        raise HTTPException(403, "Forbidden")
-
-
 # ---------- Отдача фронтенда ----------
 @app.get("/", response_class=HTMLResponse)
-def index(t: str = Query(default="")):
-    check_token(t)
+def index():
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    # страница содержит токен в URL — она не должна оседать в кэшах/прокси
-    return HTMLResponse(html, headers={"Cache-Control": "no-store"})
+    return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
 # ---------- Получить список доступных форматов (для ПК-режима) ----------
 @app.get("/api/formats")
-def get_formats(url: str, t: str = Query(default="")):
-    check_token(t)
+def get_formats(url: str):
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
@@ -186,12 +172,9 @@ def _download(url: str, format_selector: str, audio_only: bool) -> Path:
 @app.get("/api/download")
 def download(
     url: str,
-    t: str = Query(default=""),
     mode: str = Query(default="quick"),  # quick | video | audio
     format_id: str | None = Query(default=None),
 ):
-    check_token(t)
-
     if mode == "audio":
         format_selector = "bestaudio/best"
         audio_only = True
@@ -234,13 +217,11 @@ COMPRESS_TIMEOUT_SEC = int(os.environ.get("YTDLP_COMPRESS_TIMEOUT", "600"))
 @app.post("/api/compress")
 async def api_compress(
     file: UploadFile,
-    t: str = Query(default=""),
     video_bitrate_kbps: int = Form(...),
     target_height: int = Form(...),
     audio_mode: str = Form(...),
     preset: str = Form(...),
 ):
-    check_token(t)
 
     if preset not in ALLOWED_PRESETS:
         raise HTTPException(400, f"Недопустимый preset: {preset}")

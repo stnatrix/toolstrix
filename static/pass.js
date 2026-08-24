@@ -545,6 +545,7 @@
   }
 
   function showToast() {
+    if (window.natrixSFX) window.natrixSFX.playSuccess();
     if (!els.toast) return;
     els.toast.style.opacity = '1';
     clearTimeout(toastTimeout);

@@ -349,9 +349,6 @@ const COMPRESS = (() => {
     setProgress(0);
     setStatus('Загрузка видео на сервер для сжатия...', false);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('t') || '';
-
     // Calculate parameters (exactly matching the client calculation)
     const duration = currentFile.duration;
     const safetyMargin = 0.93;
@@ -395,7 +392,7 @@ const COMPRESS = (() => {
 
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', `/api/compress?t=${encodeURIComponent(token)}`, true);
+      xhr.open('POST', '/api/compress', true);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {

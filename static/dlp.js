@@ -36,10 +36,6 @@
   let chosenIsAudio = false;
   let formatsLoadedForUrl = null;
 
-  function getToken() {
-    return new URLSearchParams(location.search).get('t') || '';
-  }
-
   function setStatus(msg, isError) {
     el.status.textContent = msg;
     el.status.className = 'status-line' + (isError ? ' error' : msg ? ' ok' : '');
@@ -52,6 +48,7 @@
   // ---- mode toggle (UI-level, quick vs advanced) ----
   el.modeToggle.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (window.natrixSFX) window.natrixSFX.playClick();
       mode = btn.dataset.mode;
       el.modeToggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
       el.hint.textContent = mode === 'quick'
@@ -67,8 +64,7 @@
   // ---- fetch formats (advanced mode) ----
   async function loadFormats(url) {
     setStatus('Получаю список форматов...', false);
-    const token = getToken();
-    const qs = new URLSearchParams({ url, t: token });
+    const qs = new URLSearchParams({ url });
     const resp = await fetch(`${ENDPOINTS.formats}?${qs.toString()}`);
     if (!resp.ok) {
       const body = await resp.json().catch(() => ({}));
@@ -149,14 +145,14 @@
       return;
     }
 
+    if (window.natrixSFX) window.natrixSFX.playClick();
     setBusy(true);
     el.progressWrap.classList.add('active');
     el.progressBar.style.width = '60%';
     setStatus('Скачиваю (это может занять время)...', false);
 
     try {
-      const token = getToken();
-      const qs = new URLSearchParams({ url, t: token });
+      const qs = new URLSearchParams({ url });
 
       if (mode === 'advanced' && chosenIsAudio) {
         qs.set('mode', 'audio');
@@ -193,6 +189,7 @@
       URL.revokeObjectURL(dlUrl);
 
       setStatus('Готово: ' + filename, false);
+      if (window.natrixSFX) window.natrixSFX.playSuccess();
     } catch (err) {
       console.error(err);
       setStatus('Ошибка: ' + (err.message || err), true);
