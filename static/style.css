@@ -142,64 +142,64 @@ html, body {
 .ambient-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(150px);
+  filter: blur(125px);
   mix-blend-mode: screen;
   pointer-events: none;
   will-change: transform;
 }
 
-/* 1. Top-Left: Deep Cosmic Indigo & Cyan/Teal Glow */
+/* 1. Top-Left: Electric Deep Indigo & Radiant Cyan Glow */
 .blob-top-left {
-  width: 950px;
-  height: 950px;
+  width: 1000px;
+  height: 1000px;
   top: -240px;
   left: -200px;
-  background: radial-gradient(circle, rgba(65, 40, 150, 0.42) 0%, rgba(14, 90, 130, 0.28) 45%, transparent 75%);
-  opacity: 0.38;
+  background: radial-gradient(circle, rgba(124, 77, 255, 0.75) 0%, rgba(0, 210, 255, 0.45) 45%, transparent 70%);
+  opacity: 0.75;
   animation: blobFloat1 22s ease-in-out infinite alternate;
 }
 
-/* 2. Center-Right: Muted Cosmic Magenta & Deep Violet */
+/* 2. Center-Right: Deep Velvet Magenta & Cosmic Violet */
 .blob-center-right {
-  width: 1000px;
-  height: 900px;
+  width: 1050px;
+  height: 950px;
   top: 15%;
   right: -220px;
-  background: radial-gradient(circle, rgba(110, 30, 95, 0.38) 0%, rgba(70, 25, 120, 0.25) 50%, transparent 75%);
-  opacity: 0.35;
+  background: radial-gradient(circle, rgba(195, 45, 170, 0.65) 0%, rgba(120, 40, 200, 0.45) 50%, transparent 72%);
+  opacity: 0.70;
   animation: blobFloat2 25s ease-in-out infinite alternate;
 }
 
-/* 3. Bottom-Left: Deep Oceanic Blue-Teal Nebula */
+/* 3. Bottom-Left: Celestial Cyan & Oceanic Deep Blue */
 .blob-bottom-left {
-  width: 1150px;
-  height: 950px;
+  width: 1200px;
+  height: 1000px;
   bottom: -280px;
   left: -200px;
-  background: radial-gradient(circle, rgba(12, 100, 135, 0.40) 0%, rgba(30, 50, 125, 0.26) 50%, transparent 75%);
-  opacity: 0.36;
+  background: radial-gradient(circle, rgba(0, 180, 230, 0.70) 0%, rgba(30, 80, 220, 0.50) 50%, transparent 75%);
+  opacity: 0.75;
   animation: blobFloat3 20s ease-in-out infinite alternate;
 }
 
-/* 4. Bottom-Right: Deep Indigo & Muted Plum Glow */
+/* 4. Bottom-Right: Deep Cosmic Violet & Sapphire Glow */
 .blob-bottom-right {
-  width: 1250px;
-  height: 1000px;
+  width: 1300px;
+  height: 1050px;
   bottom: -300px;
   right: -200px;
-  background: radial-gradient(circle, rgba(75, 35, 140, 0.42) 0%, rgba(100, 28, 90, 0.25) 45%, rgba(30, 25, 80, 0.20) 65%, transparent 80%);
-  opacity: 0.38;
+  background: radial-gradient(circle, rgba(140, 50, 240, 0.70) 0%, rgba(70, 30, 180, 0.50) 45%, rgba(175, 40, 140, 0.35) 70%, transparent 85%);
+  opacity: 0.75;
   animation: blobFloat4 24s ease-in-out infinite alternate;
 }
 
-/* 5. Center-Bottom: Soft Cyan-Indigo Pool */
+/* 5. Center-Bottom: Deep Celestial Cyan & Indigo Pool */
 .blob-bottom-center {
-  width: 1350px;
-  height: 850px;
+  width: 1400px;
+  height: 900px;
   bottom: -240px;
   left: 8%;
-  background: radial-gradient(ellipse, rgba(15, 110, 140, 0.38) 0%, rgba(55, 35, 120, 0.25) 45%, transparent 75%);
-  opacity: 0.32;
+  background: radial-gradient(ellipse, rgba(0, 200, 255, 0.65) 0%, rgba(50, 100, 240, 0.45) 40%, rgba(120, 60, 230, 0.35) 70%, transparent 100%);
+  opacity: 0.70;
   animation: blobFloat5 26s ease-in-out infinite alternate;
 }
 
