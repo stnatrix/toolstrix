@@ -1,10 +1,6 @@
 /* ==========================================================================
    NATRIX — Self-hosted Fonts (Inter & JetBrains Mono)
-   Downloaded and served locally: no external requests at runtime.
-   Compatible with COEP: require-corp (SharedArrayBuffer for ffmpeg.wasm).
    ========================================================================== */
-
-/* Inter 400 */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -29,16 +25,6 @@
   src: url(/static/fonts/inter-400-latin.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
-/* Inter 500 */
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url(/static/fonts/inter-500-cyrillic.woff2) format('woff2');
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -46,16 +32,6 @@
   font-display: swap;
   src: url(/static/fonts/inter-500-latin.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* Inter 600 */
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url(/static/fonts/inter-600-cyrillic.woff2) format('woff2');
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
 }
 @font-face {
   font-family: 'Inter';
@@ -65,8 +41,6 @@
   src: url(/static/fonts/inter-600-latin.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
-/* JetBrains Mono 500, 600, 700 */
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
@@ -97,11 +71,11 @@
    ========================================================================== */
 :root {
   --bg-pure: #000000;
-  --bg-card: rgba(18, 20, 26, 0.65);
-  --bg-card-hover: rgba(26, 30, 40, 0.85);
-  --card-inner-bg: #090b10;
-  --card-border: rgba(255, 255, 255, 0.09);
-  --card-border-hover: rgba(255, 255, 255, 0.22);
+  --bg-card: rgba(14, 16, 22, 0.62);
+  --bg-card-hover: rgba(22, 26, 36, 0.88);
+  --card-inner-bg: #07090d;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --card-border-hover: rgba(255, 255, 255, 0.28);
 
   --text-main: #ffffff;
   --text-sub: #a1a1aa;
@@ -111,22 +85,22 @@
   /* Signature Grainient Lime CTA */
   --accent-lime: #c8f03c;
   --accent-lime-hover: #d7fa4c;
-  --accent-lime-glow: rgba(200, 240, 60, 0.35);
+  --accent-lime-glow: rgba(200, 240, 60, 0.4);
 
   /* Tool Accents */
   --dlp: #00e5ff;
-  --dlp-glow: rgba(0, 229, 255, 0.3);
+  --dlp-glow: rgba(0, 229, 255, 0.35);
   --mpeg: #ff5252;
-  --mpeg-glow: rgba(255, 82, 82, 0.3);
+  --mpeg-glow: rgba(255, 82, 82, 0.35);
   --compress: #ffb300;
-  --compress-glow: rgba(255, 179, 0, 0.3);
+  --compress-glow: rgba(255, 179, 0, 0.35);
   --pass: #b388ff;
-  --pass-glow: rgba(179, 136, 255, 0.3);
+  --pass-glow: rgba(179, 136, 255, 0.35);
 
   --danger: #f87171;
   --ok: #4ade80;
 
-  --radius-xl: 24px;
+  --radius-xl: 28px;
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -135,8 +109,8 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
-  --shadow-float: 0 20px 50px -10px rgba(0, 0, 0, 0.7);
-  --shadow-modal: 0 30px 90px rgba(0, 0, 0, 0.85);
+  --shadow-float: 0 24px 60px -12px rgba(0, 0, 0, 0.8);
+  --shadow-modal: 0 32px 100px rgba(0, 0, 0, 0.92);
 }
 
 * {
@@ -156,7 +130,7 @@ html, body {
 }
 
 /* ==========================================================================
-   AMBIENT GRAINIENT BACKGROUND & LIQUID WAVES
+   MASSIVE RICH AMBIENT GRAINIENT BACKGROUND & LIQUID COSMIC WAVES
    ========================================================================== */
 .grainient-bg {
   position: fixed;
@@ -169,92 +143,103 @@ html, body {
 .ambient-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.45;
+  filter: blur(100px);
+  opacity: 0.65;
   mix-blend-mode: screen;
   will-change: transform;
 }
 
+/* Vibrant warm iridescent glowing orbs */
 .glow-1 {
-  width: 650px;
-  height: 500px;
-  background: radial-gradient(circle, #e040fb 0%, #ff5252 50%, transparent 75%);
-  bottom: -150px;
-  left: -100px;
-  animation: waveMotion1 16s ease-in-out infinite alternate;
+  width: 900px;
+  height: 700px;
+  background: radial-gradient(circle, #e040fb 0%, #ff4500 45%, #ff0055 75%, transparent 100%);
+  bottom: -200px;
+  left: -150px;
+  animation: waveMotion1 14s ease-in-out infinite alternate;
 }
 
 .glow-2 {
-  width: 750px;
-  height: 600px;
-  background: radial-gradient(circle, #ff9100 0%, #ff5252 50%, #7c4dff 85%, transparent 100%);
-  bottom: -200px;
-  right: -120px;
-  animation: waveMotion2 19s ease-in-out infinite alternate;
+  width: 1000px;
+  height: 800px;
+  background: radial-gradient(circle, #ff9100 0%, #ff1744 40%, #7c4dff 80%, transparent 100%);
+  bottom: -240px;
+  right: -150px;
+  animation: waveMotion2 18s ease-in-out infinite alternate;
 }
 
 .glow-3 {
-  width: 900px;
-  height: 450px;
-  background: radial-gradient(ellipse, #00e5ff 0%, #7c4dff 40%, transparent 75%);
-  bottom: -120px;
-  left: 20%;
-  opacity: 0.35;
-  animation: waveMotion3 22s ease-in-out infinite alternate;
+  width: 1100px;
+  height: 600px;
+  background: radial-gradient(ellipse, #00e5ff 0%, #00b0ff 30%, #7c4dff 65%, transparent 100%);
+  bottom: -160px;
+  left: 15%;
+  opacity: 0.55;
+  animation: waveMotion3 20s ease-in-out infinite alternate;
 }
 
-/* Bottom liquid iridescent wave gradient */
+/* Rising liquid iridescent wave gradient covering the lower screen */
 .ambient-wave {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 420px;
-  background: linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.4) 0%,
-    transparent 100%
-  ),
-  radial-gradient(
-    ellipse 130% 90% at 50% 120%,
-    rgba(224, 64, 251, 0.28) 0%,
-    rgba(255, 112, 67, 0.22) 35%,
-    rgba(0, 229, 255, 0.15) 60%,
-    transparent 100%
-  );
-  filter: blur(40px);
+  left: -20%;
+  right: -20%;
+  bottom: -50px;
+  height: 600px;
+  background: 
+    radial-gradient(
+      ellipse 110% 75% at 50% 100%,
+      rgba(255, 112, 67, 0.45) 0%,
+      rgba(224, 64, 251, 0.4) 30%,
+      rgba(124, 77, 255, 0.35) 55%,
+      rgba(0, 229, 255, 0.25) 75%,
+      transparent 100%
+    ),
+    linear-gradient(
+      0deg,
+      rgba(255, 87, 34, 0.2) 0%,
+      rgba(156, 39, 176, 0.15) 40%,
+      transparent 100%
+    );
+  filter: blur(55px);
   pointer-events: none;
+  animation: waveFloat 12s ease-in-out infinite alternate;
 }
 
 /* Subtle organic grain texture */
 .noise-overlay {
   position: absolute;
   inset: 0;
-  opacity: 0.028;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   pointer-events: none;
 }
 
 @keyframes waveMotion1 {
   0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(60px, -40px) scale(1.12); }
-  100% { transform: translate(-40px, 30px) scale(0.95); }
+  50% { transform: translate(80px, -50px) scale(1.18); }
+  100% { transform: translate(-50px, 40px) scale(0.92); }
 }
 
 @keyframes waveMotion2 {
   0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-80px, -60px) scale(1.15); }
-  100% { transform: translate(50px, 40px) scale(0.9); }
+  50% { transform: translate(-100px, -80px) scale(1.2); }
+  100% { transform: translate(60px, 50px) scale(0.9); }
 }
 
 @keyframes waveMotion3 {
   0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(40px, -30px) scale(1.08); }
-  100% { transform: translate(-50px, 20px) scale(0.96); }
+  50% { transform: translate(50px, -40px) scale(1.12); }
+  100% { transform: translate(-70px, 30px) scale(0.95); }
+}
+
+@keyframes waveFloat {
+  0% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-30px) scale(1.04); }
+  100% { transform: translateY(10px) scale(0.98); }
 }
 
 /* ==========================================================================
-   HEADER
+   MINIMALIST HEADER
    ========================================================================== */
 .natrix-header {
   position: relative;
@@ -262,14 +247,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 22px 40px;
-  max-width: 1320px;
+  padding: 30px 48px;
+  max-width: 1400px;
   margin: 0 auto;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
 }
 
 .natrix-logo {
@@ -278,14 +258,14 @@ html, body {
   gap: 10px;
   text-decoration: none;
   color: var(--text-main);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .logo-circle {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   background: var(--accent-lime);
   box-shadow: 0 0 14px var(--accent-lime-glow);
@@ -293,41 +273,6 @@ html, body {
 
 .natrix-logo .dot {
   color: var(--accent-lime);
-}
-
-.header-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--card-border);
-  backdrop-filter: blur(16px);
-  padding: 4px 6px;
-  border-radius: var(--radius-pill);
-}
-
-.nav-link {
-  background: transparent;
-  border: none;
-  color: var(--text-sub);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.nav-link:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.nav-link.active {
-  color: #000000;
-  background: var(--text-main);
-  font-weight: 600;
 }
 
 .header-right {
@@ -339,60 +284,41 @@ html, body {
 .sfx-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--card-border);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text-sub);
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: var(--radius-pill);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  backdrop-filter: blur(16px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sfx-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--text-main);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .sfx-toggle.muted {
-  opacity: 0.5;
+  opacity: 0.45;
   color: var(--text-dim);
-}
-
-.status-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: var(--text-dim);
-}
-
-.status-indicator {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ok);
-  box-shadow: 0 0 8px var(--ok);
 }
 
 /* ==========================================================================
-   LANDING HERO & FLOATING CARDS
+   MINIMALIST HERO & FREELY SCATTERED FLOATING CARDS
    ========================================================================== */
 .landing-view {
   position: relative;
   z-index: 10;
-  max-width: 1240px;
+  max-width: 1360px;
   margin: 0 auto;
-  padding: 30px 24px 80px;
+  padding: 40px 32px 100px;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
@@ -409,129 +335,106 @@ body.workspace-open .landing-view {
   text-align: center;
 }
 
-/* Grainient Pill Badge */
-.hero-badge {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 18px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-pill);
-  font-size: 12px;
-  font-weight: 500;
-  color: #f1f5f9;
-  margin-bottom: 24px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.hero-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-lime);
-}
-
 .hero-title {
-  font-size: 56px;
+  font-size: 64px;
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.035em;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
   color: var(--text-main);
-  margin-bottom: 18px;
+  margin-bottom: 70px;
 }
 
 .hero-gradient-text {
-  background: linear-gradient(135deg, #ffffff 30%, #a1a1aa 100%);
+  background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.hero-sub {
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text-sub);
-  max-width: 580px;
-  margin-bottom: 60px;
-}
-
 /* ==========================================================================
-   LITERAL FLOATING CARDS (PHYSICS & AMBIENT WAVE DRIFT)
+   FREEFORM ASYMMETRICAL FLOATING BLOCKS (SPACE / FLUID DRIFT)
    ========================================================================== */
 .floating-cards-container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 22px;
+  gap: 28px;
   width: 100%;
-  perspective: 1000px;
-  margin-top: 10px;
+  perspective: 1200px;
+  align-items: center;
 }
 
 .floating-card {
   position: relative;
   background: var(--bg-card);
   border: 1px solid var(--card-border);
-  border-radius: var(--radius-xl);
-  padding: 28px 24px;
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(28px);
   cursor: pointer;
   outline: none;
   box-shadow: var(--shadow-float);
-  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.35s ease, background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
   will-change: transform;
 }
 
-/* Individual literal floating animations with phase offsets */
+/* Organic Asymmetrical Shapes & Staggered Drift Physics */
 .float-card-1 {
-  animation: floatCard1 7.5s ease-in-out infinite;
+  border-radius: 38px 20px 44px 24px;
+  padding: 34px 26px;
+  margin-top: -16px;
+  animation: floatOrganic1 8s ease-in-out infinite;
 }
 
 .float-card-2 {
-  animation: floatCard2 8.5s ease-in-out 0.8s infinite;
+  border-radius: 22px 42px 24px 38px;
+  padding: 38px 26px;
+  margin-top: 24px;
+  animation: floatOrganic2 9.5s ease-in-out 1.2s infinite;
 }
 
 .float-card-3 {
-  animation: floatCard3 9s ease-in-out 1.6s infinite;
+  border-radius: 40px 24px 36px 46px;
+  padding: 32px 28px;
+  margin-top: -10px;
+  animation: floatOrganic3 8.2s ease-in-out 2.4s infinite;
 }
 
 .float-card-4 {
-  animation: floatCard4 8s ease-in-out 2.2s infinite;
+  border-radius: 24px 44px 22px 40px;
+  padding: 36px 26px;
+  margin-top: 20px;
+  animation: floatOrganic4 10s ease-in-out 0.6s infinite;
 }
 
-@keyframes floatCard1 {
+@keyframes floatOrganic1 {
   0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(-0.7deg); }
+  50% { transform: translateY(-14px) rotate(-1.2deg); }
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
-@keyframes floatCard2 {
+@keyframes floatOrganic2 {
   0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(8px) rotate(0.8deg); }
+  50% { transform: translateY(16px) rotate(1.4deg); }
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
-@keyframes floatCard3 {
+@keyframes floatOrganic3 {
   0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-9px) rotate(0.6deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
-@keyframes floatCard4 {
+@keyframes floatOrganic4 {
   0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(10px) rotate(-0.8deg); }
+  50% { transform: translateY(14px) rotate(-1.3deg); }
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
-/* Hover on card stops floating and smoothly scales */
+/* On hover / focus: stop floating, smooth expansion & glowing aura */
 .floating-card:hover,
 .floating-card:focus-visible {
   animation-play-state: paused;
-  transform: translateY(-12px) scale(1.025) !important;
+  transform: translateY(-14px) scale(1.04) !important;
   background: var(--bg-card-hover);
   border-color: var(--card-border-hover);
-  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.9);
 }
 
 .card-glow {
@@ -545,7 +448,7 @@ body.workspace-open .landing-view {
 }
 
 .floating-card:hover .card-glow {
-  opacity: 0.22;
+  opacity: 0.28;
 }
 
 .card-inner {
@@ -559,7 +462,7 @@ body.workspace-open .landing-view {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .card-eyebrow {
@@ -579,16 +482,16 @@ body.workspace-open .landing-view {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.tag-dlp { color: var(--dlp); border-color: rgba(0, 229, 255, 0.25); }
-.tag-mpeg { color: var(--mpeg); border-color: rgba(255, 82, 82, 0.25); }
-.tag-compress { color: var(--compress); border-color: rgba(255, 179, 0, 0.25); }
-.tag-pass { color: var(--pass); border-color: rgba(179, 136, 255, 0.25); }
+.tag-dlp { color: var(--dlp); border-color: rgba(0, 229, 255, 0.3); }
+.tag-mpeg { color: var(--mpeg); border-color: rgba(255, 82, 82, 0.3); }
+.tag-compress { color: var(--compress); border-color: rgba(255, 179, 0, 0.3); }
+.tag-pass { color: var(--pass); border-color: rgba(179, 136, 255, 0.3); }
 
 .card-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   margin-bottom: 12px;
 }
 
@@ -598,9 +501,9 @@ body.workspace-open .landing-view {
 
 .card-desc {
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--text-sub);
-  margin-bottom: 24px;
+  margin-bottom: 26px;
   flex-grow: 1;
 }
 
@@ -612,7 +515,7 @@ body.workspace-open .landing-view {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--accent-lime);
   transition: transform 0.2s ease, gap 0.2s ease;
@@ -633,8 +536,8 @@ body.workspace-open .landing-view {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(20px);
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(24px);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
@@ -652,7 +555,7 @@ body.workspace-open .landing-view {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  background: rgba(15, 17, 23, 0.88);
+  background: rgba(13, 15, 20, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-modal);
@@ -670,7 +573,7 @@ body.workspace-open .landing-view {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
+  padding: 18px 26px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
 }
@@ -680,20 +583,20 @@ body.workspace-open .landing-view {
   align-items: center;
   gap: 8px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text-main);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .kbd-hint {
@@ -1037,25 +940,24 @@ select:focus {
 }
 
 /* ==========================================================================
-   FOOTER
+   MINIMALIST FOOTER
    ========================================================================== */
 .natrix-footer {
   position: relative;
   z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  max-width: 1240px;
-  margin: 40px auto 30px;
-  padding: 20px 24px;
+  justify-content: center;
+  max-width: 1360px;
+  margin: 30px auto 24px;
+  padding: 14px 32px;
   font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-dim);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.2);
 }
 
 .footer-version {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -1063,28 +965,30 @@ select:focus {
 /* ==========================================================================
    RESPONSIVE MEDIA QUERIES
    ========================================================================== */
-@media (max-width: 1024px) {
+@media (max-width: 1080px) {
   .floating-cards-container {
     grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+  .float-card-1, .float-card-2, .float-card-3, .float-card-4 {
+    margin-top: 0;
   }
   .hero-title {
-    font-size: 44px;
+    font-size: 48px;
   }
 }
 
 @media (max-width: 640px) {
   .natrix-header {
-    padding: 16px 20px;
-  }
-  .header-nav {
-    display: none;
+    padding: 20px 24px;
   }
   .hero-title {
-    font-size: 32px;
+    font-size: 34px;
+    margin-bottom: 40px;
   }
   .floating-cards-container {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 18px;
   }
   .workspace-overlay {
     padding: 10px;

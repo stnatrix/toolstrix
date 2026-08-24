@@ -29,44 +29,22 @@
     </a>
   </div>
 
-  <nav class="header-nav">
-    <button class="nav-link" data-open="dlp" type="button">dlp</button>
-    <button class="nav-link" data-open="mpeg" type="button">mpeg</button>
-    <button class="nav-link" data-open="compress" type="button">compress</button>
-    <button class="nav-link" data-open="pass" type="button">pass</button>
-  </nav>
-
   <div class="header-right">
     <button class="sfx-toggle" id="sfx-toggle" type="button" title="Включить / выключить звуки">
       <svg class="sfx-icon sfx-icon-on" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       <svg class="sfx-icon sfx-icon-off" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
       <span id="sfx-label">SFX</span>
     </button>
-    <div class="status-pill">
-      <span class="status-indicator"></span>
-      <span>Cloudflare Protected</span>
-    </div>
   </div>
 </header>
 
 <!-- ======================= LANDING PAGE ======================= -->
 <main class="landing-view" id="landing-view">
   <div class="hero-container">
-    <div class="hero-badge">
-      <span class="hero-badge-glow"></span>
-      <span class="hero-badge-dot"></span>
-      <span>Meet Natrix 2.0</span>
-    </div>
-
     <h1 class="hero-title">
       Discover the Best Tools<br>
       <span class="hero-gradient-text">on the Internet.</span>
     </h1>
-
-    <p class="hero-sub">
-      Мощный набор клиентских инструментов для обработки медиа, сжатия видео и скачивания.
-      Быстро, приватно и без рекламы.
-    </p>
 
     <!-- Floating Cards Section on Ambient Wave Space -->
     <div class="floating-cards-container">
@@ -76,12 +54,12 @@
         <div class="card-glow" style="--card-accent: #00e5ff;"></div>
         <div class="card-inner">
           <div class="card-top">
-            <span class="card-eyebrow">// 01. media retrieval</span>
+            <span class="card-eyebrow">// media retrieval</span>
             <span class="card-tag tag-dlp">yt-dlp</span>
           </div>
           <h2 class="card-title">natrix<span class="dot">.</span>dlp</h2>
           <p class="card-desc">
-            Скачивание видео и аудио в высоком качестве с YouTube и сотен других площадок.
+            Скачивание видео и аудио в высоком качестве с любых площадок.
           </p>
           <div class="card-footer">
             <span class="card-launch-btn">
@@ -97,12 +75,12 @@
         <div class="card-glow" style="--card-accent: #ff5252;"></div>
         <div class="card-inner">
           <div class="card-top">
-            <span class="card-eyebrow">// 02. local editing</span>
-            <span class="card-tag tag-mpeg">ffmpeg.wasm</span>
+            <span class="card-eyebrow">// local editing</span>
+            <span class="card-tag tag-mpeg">ffmpeg</span>
           </div>
           <h2 class="card-title">natrix<span class="dot">.</span>mpeg</h2>
           <p class="card-desc">
-            Обрезка, регулировка громкости, фильтры, ресайз и конвертация видео и картинок в браузере.
+            Обрезка, громкость, фильтры, ресайз и конвертация прямо в браузере.
           </p>
           <div class="card-footer">
             <span class="card-launch-btn">
@@ -118,12 +96,12 @@
         <div class="card-glow" style="--card-accent: #ffb300;"></div>
         <div class="card-inner">
           <div class="card-top">
-            <span class="card-eyebrow">// 03. video compressor</span>
+            <span class="card-eyebrow">// video compression</span>
             <span class="card-tag tag-compress">bitrate match</span>
           </div>
           <h2 class="card-title">natrix<span class="dot">.</span>compress</h2>
           <p class="card-desc">
-            Сжатие видео под целевой размер (8 МБ, 25 МБ, 50 МБ) с автоподбором битрейта и разрешения.
+            Сжатие видео под точный размер в МБ с автоподбором битрейта.
           </p>
           <div class="card-footer">
             <span class="card-launch-btn">
@@ -139,12 +117,12 @@
         <div class="card-glow" style="--card-accent: #b388ff;"></div>
         <div class="card-inner">
           <div class="card-top">
-            <span class="card-eyebrow">// 04. security & keys</span>
+            <span class="card-eyebrow">// credentials</span>
             <span class="card-tag tag-pass">eff diceware</span>
           </div>
           <h2 class="card-title">natrix<span class="dot">.</span>pass</h2>
           <p class="card-desc">
-            Генерация стойких паролей и мнемонических парольных фраз с расчетом энтропии и историей.
+            Генерация стойких паролей и мнемонических фраз с энтропией.
           </p>
           <div class="card-footer">
             <span class="card-launch-btn">
@@ -480,7 +458,6 @@
 </div>
 
 <footer class="natrix-footer">
-  <span>tools.stnatrix.space · high performance client suite</span>
   <span class="footer-version">v2.0.0</span>
 </footer>
 
