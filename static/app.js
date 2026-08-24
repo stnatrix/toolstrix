@@ -90,20 +90,48 @@
 
   // --- Attach Event Listeners ---
 
-  // 1. Floating cards on landing
-  document.querySelectorAll('.floating-card').forEach((card) => {
-    const tool = card.dataset.tool;
-    card.addEventListener('click', () => openTool(tool));
-    card.addEventListener('keydown', (e) => {
+  // 1. Floating card wrappers on landing
+  document.querySelectorAll('.card-wrapper').forEach((wrapper) => {
+    const tool = wrapper.dataset.tool;
+    wrapper.addEventListener('click', () => openTool(tool));
+    wrapper.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         openTool(tool);
       }
     });
-    card.addEventListener('mouseenter', () => sfx('playHover'));
+    wrapper.addEventListener('mouseenter', () => sfx('playHover'));
   });
 
-  // 2. Back button inside workspace
+  // 2. Interactive Cursor Ambient Glow (Smooth Lerp)
+  const cursorGlow = document.getElementById('cursor-glow');
+  if (cursorGlow) {
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+    let currentX = targetX;
+    let currentY = targetY;
+    let isMoving = false;
+
+    window.addEventListener('pointermove', (e) => {
+      targetX = e.clientX;
+      targetY = e.clientY;
+      if (!isMoving) {
+        isMoving = true;
+        cursorGlow.style.opacity = '1';
+      }
+    }, { passive: true });
+
+    function renderCursor() {
+      // Lerp smooth follow (0.12 factor)
+      currentX += (targetX - currentX) * 0.12;
+      currentY += (targetY - currentY) * 0.12;
+      cursorGlow.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+      requestAnimationFrame(renderCursor);
+    }
+    requestAnimationFrame(renderCursor);
+  }
+
+  // 3. Back button inside workspace
   if (backBtn) {
     backBtn.addEventListener('click', () => closeWorkspace());
   }

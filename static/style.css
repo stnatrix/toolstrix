@@ -73,7 +73,7 @@
   --bg-pure: #000000;
   --card-inner-bg: #07090d;
   --card-border: rgba(255, 255, 255, 0.1);
-  --card-border-hover: rgba(255, 255, 255, 0.3);
+  --card-border-hover: rgba(255, 255, 255, 0.32);
 
   --text-main: #ffffff;
   --text-sub: #a1a1aa;
@@ -128,7 +128,7 @@ html, body {
 }
 
 /* ==========================================================================
-   GRADIENT AS AN IMMERSIVE ENVIRONMENT (MULTI-POINT DIFFUSE AMBIENT BLOBS)
+   LIVING BLENDED GRADIENT ATMOSPHERE (SCREEN BLEND BLOBS)
    ========================================================================== */
 .grainient-bg {
   position: fixed;
@@ -138,157 +138,131 @@ html, body {
   overflow: hidden;
 }
 
-.ambient-glow {
+.ambient-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(110px);
+  filter: blur(140px);
   mix-blend-mode: screen;
+  pointer-events: none;
   will-change: transform;
 }
 
-/* 1. Top-Left atmospheric aura */
-.glow-top-left {
-  width: 750px;
-  height: 750px;
-  background: radial-gradient(circle, rgba(124, 77, 255, 0.3) 0%, rgba(0, 229, 255, 0.15) 45%, transparent 70%);
-  top: -160px;
-  left: -120px;
-  opacity: 0.6;
-  animation: waveMotionTopLeft 32s ease-in-out infinite alternate;
-}
-
-/* 2. Center/Mid atmospheric aura */
-.glow-center {
+/* 1. Top-Left: Electric Violet & Cyan */
+.blob-top-left {
   width: 900px;
-  height: 650px;
-  background: radial-gradient(circle, rgba(224, 64, 251, 0.22) 0%, rgba(255, 145, 0, 0.14) 45%, transparent 70%);
-  top: 20%;
-  left: 25%;
-  opacity: 0.55;
-  animation: waveMotionCenter 38s ease-in-out infinite alternate;
+  height: 900px;
+  top: -220px;
+  left: -180px;
+  background: radial-gradient(circle, rgba(124, 77, 255, 0.6) 0%, rgba(0, 229, 255, 0.3) 45%, transparent 70%);
+  animation: blobFloat1 35s ease-in-out infinite alternate;
 }
 
-/* 3. Top-Right depth aura */
-.glow-top-right {
-  width: 700px;
-  height: 700px;
-  background: radial-gradient(circle, rgba(61, 90, 254, 0.28) 0%, rgba(0, 229, 255, 0.12) 50%, transparent 70%);
-  top: -100px;
-  right: -100px;
-  opacity: 0.5;
-  animation: waveMotionTopRight 28s ease-in-out infinite alternate;
-}
-
-/* 4. Bottom-Left intense magenta/sunset flame orb */
-.glow-1 {
-  width: 950px;
-  height: 750px;
-  background: radial-gradient(circle, #e040fb 0%, #ff4500 45%, #ff0055 75%, transparent 100%);
-  bottom: -200px;
-  left: -150px;
-  opacity: 0.7;
-  animation: waveMotion1 18s ease-in-out infinite alternate;
-}
-
-/* 5. Bottom-Right amber flame & violet orb */
-.glow-2 {
-  width: 1050px;
+/* 2. Center-Right: Radiant Magenta & Amber */
+.blob-center-right {
+  width: 1000px;
   height: 850px;
+  top: 15%;
+  right: -200px;
+  background: radial-gradient(circle, rgba(224, 64, 251, 0.5) 0%, rgba(255, 145, 0, 0.35) 50%, transparent 70%);
+  animation: blobFloat2 45s ease-in-out infinite alternate;
+}
+
+/* 3. Bottom-Left: Intense Flame Orange & Crimson */
+.blob-bottom-left {
+  width: 1150px;
+  height: 950px;
+  bottom: -280px;
+  left: -200px;
+  background: radial-gradient(circle, #ff4500 0%, #ff0055 50%, transparent 75%);
+  opacity: 0.85;
+  animation: blobFloat3 28s ease-in-out infinite alternate;
+}
+
+/* 4. Bottom-Right: Deep Sunset Amber & Purple */
+.blob-bottom-right {
+  width: 1250px;
+  height: 1000px;
+  bottom: -300px;
+  right: -200px;
   background: radial-gradient(circle, #ff9100 0%, #ff1744 40%, #7c4dff 80%, transparent 100%);
+  opacity: 0.85;
+  animation: blobFloat4 38s ease-in-out infinite alternate;
+}
+
+/* 5. Center-Bottom: Cyan Electric Pool */
+.blob-bottom-center {
+  width: 1350px;
+  height: 850px;
   bottom: -240px;
-  right: -150px;
-  opacity: 0.7;
-  animation: waveMotion2 22s ease-in-out infinite alternate;
+  left: 8%;
+  background: radial-gradient(ellipse, #00e5ff 0%, #00b0ff 35%, #7c4dff 70%, transparent 100%);
+  opacity: 0.75;
+  animation: blobFloat5 55s ease-in-out infinite alternate;
 }
 
-/* 6. Mid-Bottom cyan electric pool */
-.glow-3 {
-  width: 1200px;
-  height: 700px;
-  background: radial-gradient(ellipse, #00e5ff 0%, #00b0ff 30%, #7c4dff 65%, transparent 100%);
-  bottom: -180px;
-  left: 12%;
-  opacity: 0.6;
-  animation: waveMotion3 26s ease-in-out infinite alternate;
+/* Living Fluid Drift Trajectories */
+@keyframes blobFloat1 {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(90px, 60px) scale(1.18); }
+  66% { transform: translate(-50px, 30px) scale(0.92); }
+  100% { transform: translate(0, 0) scale(1); }
 }
 
-/* Rising luminous iridescent liquid wave (covering bottom 60% of viewport) */
-.ambient-wave {
-  position: absolute;
-  left: -25%;
-  right: -25%;
-  bottom: -60px;
-  height: 680px;
-  background: 
-    radial-gradient(
-      ellipse 115% 80% at 50% 100%,
-      rgba(255, 112, 67, 0.5) 0%,
-      rgba(224, 64, 251, 0.45) 30%,
-      rgba(124, 77, 255, 0.4) 55%,
-      rgba(0, 229, 255, 0.3) 75%,
-      transparent 100%
-    ),
-    linear-gradient(
-      0deg,
-      rgba(255, 87, 34, 0.25) 0%,
-      rgba(156, 39, 176, 0.2) 35%,
-      transparent 100%
-    );
-  filter: blur(60px);
+@keyframes blobFloat2 {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-80px, -60px) scale(1.15); }
+  66% { transform: translate(60px, 50px) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes blobFloat3 {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(100px, -80px) scale(1.2); }
+  66% { transform: translate(-70px, 50px) scale(0.88); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes blobFloat4 {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-110px, -90px) scale(1.22); }
+  66% { transform: translate(80px, 70px) scale(0.85); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes blobFloat5 {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(70px, -60px) scale(1.16); }
+  66% { transform: translate(-90px, 40px) scale(0.92); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* Interactive Cursor Reactive Ambient Glow */
+.cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 500px;
+  height: 500px;
+  margin-top: -250px;
+  margin-left: -250px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 240, 60, 0.12) 0%, rgba(0, 229, 255, 0.08) 35%, transparent 70%);
+  filter: blur(75px);
   pointer-events: none;
-  animation: waveFloat 15s ease-in-out infinite alternate;
+  z-index: 1;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  will-change: transform;
 }
 
-/* Subtle organic grain texture */
+/* Cinematic Grain / Noise Texture */
 .noise-overlay {
   position: absolute;
   inset: 0;
-  opacity: 0.04;
+  opacity: 0.045;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   pointer-events: none;
-}
-
-/* Smooth slow-breathing cosmic keyframes */
-@keyframes waveMotionTopLeft {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(60px, 40px) scale(1.15); }
-  100% { transform: translate(-30px, -20px) scale(0.95); }
-}
-
-@keyframes waveMotionCenter {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-50px, -30px) scale(1.18); }
-  100% { transform: translate(40px, 30px) scale(0.92); }
-}
-
-@keyframes waveMotionTopRight {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-40px, 50px) scale(1.12); }
-  100% { transform: translate(30px, -20px) scale(0.96); }
-}
-
-@keyframes waveMotion1 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(90px, -60px) scale(1.2); }
-  100% { transform: translate(-60px, 40px) scale(0.9); }
-}
-
-@keyframes waveMotion2 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-110px, -90px) scale(1.22); }
-  100% { transform: translate(70px, 60px) scale(0.88); }
-}
-
-@keyframes waveMotion3 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(60px, -50px) scale(1.15); }
-  100% { transform: translate(-80px, 40px) scale(0.94); }
-}
-
-@keyframes waveFloat {
-  0% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-40px) scale(1.05); }
-  100% { transform: translateY(15px) scale(0.96); }
 }
 
 /* ==========================================================================
@@ -300,8 +274,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 32px 56px;
-  max-width: 1440px;
+  padding: 34px 60px;
+  max-width: 1480px;
   margin: 0 auto;
 }
 
@@ -339,9 +313,9 @@ html, body {
   align-items: center;
   gap: 8px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--text-sub);
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: var(--radius-pill);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -354,7 +328,7 @@ html, body {
 .sfx-toggle:hover {
   background: rgba(255, 255, 255, 0.14);
   color: var(--text-main);
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
 
@@ -369,9 +343,9 @@ html, body {
 .landing-view {
   position: relative;
   z-index: 10;
-  max-width: 1440px;
+  max-width: 1480px;
   margin: 0 auto;
-  padding: 40px 32px 120px;
+  padding: 40px 32px 140px;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
@@ -390,13 +364,13 @@ body.workspace-open .landing-view {
 
 .hero-title {
   position: relative;
-  font-size: 72px;
+  font-size: 74px;
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -0.04em;
   color: var(--text-main);
-  margin-bottom: 75px;
-  text-shadow: 0 0 70px rgba(255, 255, 255, 0.18);
+  margin-bottom: 80px;
+  text-shadow: 0 0 80px rgba(255, 255, 255, 0.18);
 }
 
 .hero-gradient-text {
@@ -406,7 +380,7 @@ body.workspace-open .landing-view {
 }
 
 /* ==========================================================================
-   FREEFORM SPATIAL CLUSTERING: BROKEN GRID & MULTI-PLANE DEPTH
+   FREEFORM SPATIAL CLUSTERING: STABLE HITBOXES & DECOUPLED FLOATING
    ========================================================================== */
 .floating-cards-container {
   display: flex;
@@ -415,123 +389,148 @@ body.workspace-open .landing-view {
   align-items: center;
   gap: 0;
   width: 100%;
-  max-width: 1360px;
+  max-width: 1440px;
   margin: 0 auto;
   position: relative;
   perspective: 1200px;
 }
 
-.floating-card {
+/* Outer Card Wrapper: Stable Hitbox, Floating Physics, Positioning, No Hover Transforms */
+.card-wrapper {
   position: relative;
-  backdrop-filter: blur(32px);
   cursor: pointer;
   outline: none;
-  box-shadow: var(--shadow-float);
-  transition: border-color 0.35s ease, background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
   will-change: transform;
+  transition: none; /* No transition fighting keyframe animation! */
 }
 
-/* ---- Card 1: DLP (Foreground / Hero Anchor / Largest Scale) ---- */
+/* Staggered entrance animation on page load */
+.card-wrapper {
+  animation-fill-mode: both;
+}
+
+/* ---- Card 1: DLP (Foreground Hero Anchor / Largest Scale) ---- */
 .float-card-1 {
-  flex: 0 0 340px;
-  width: 340px;
-  border-radius: 44px 24px 48px 28px;
-  padding: 38px 30px;
-  margin-right: -14px;
+  flex: 0 0 380px;
+  width: 380px;
+  margin-right: -20px;
   z-index: 5;
+  animation: floatDlp 8.5s ease-in-out infinite;
+}
+
+.float-card-1 .floating-card {
+  border-radius: 46px 26px 50px 30px;
+  padding: 42px 34px;
   background: rgba(10, 13, 20, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  animation: floatDlp 8.5s ease-in-out infinite;
 }
 
 .float-card-1 .card-title {
   font-size: 26px;
 }
 
-/* ---- Card 2: MPEG (Mid-Depth / Sunk Down into Gradient Waves) ---- */
+/* ---- Card 2: MPEG (Mid-Depth / Sunk Down into Bottom Gradient) ---- */
 .float-card-2 {
-  flex: 0 0 285px;
-  width: 285px;
-  border-radius: 26px 46px 28px 42px;
-  padding: 32px 24px;
-  margin-right: -10px;
+  flex: 0 0 330px;
+  width: 330px;
+  margin-right: -14px;
   z-index: 3;
-  background: rgba(14, 16, 24, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.11);
   animation: floatMpeg 10s ease-in-out 1.2s infinite;
 }
 
+.float-card-2 .floating-card {
+  border-radius: 28px 48px 30px 44px;
+  padding: 36px 28px;
+  background: rgba(14, 16, 24, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+}
+
 .float-card-2 .card-title {
-  font-size: 22px;
+  font-size: 23px;
 }
 
 /* ---- Card 3: COMPRESS (Mid-Foreground / Offset Up & Right) ---- */
 .float-card-3 {
-  flex: 0 0 305px;
-  width: 305px;
-  border-radius: 42px 28px 38px 50px;
-  padding: 34px 28px;
-  margin-right: -12px;
+  flex: 0 0 350px;
+  width: 350px;
+  margin-right: -18px;
   z-index: 4;
-  background: rgba(12, 15, 22, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.13);
   animation: floatCompress 9.2s ease-in-out 2.4s infinite;
 }
 
+.float-card-3 .floating-card {
+  border-radius: 44px 30px 40px 52px;
+  padding: 38px 32px;
+  background: rgba(12, 15, 22, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+}
+
 .float-card-3 .card-title {
-  font-size: 23px;
+  font-size: 24px;
 }
 
 /* ---- Card 4: PASS (Atmospheric Depth Plane / Compact & Sunk) ---- */
 .float-card-4 {
-  flex: 0 0 270px;
-  width: 270px;
-  border-radius: 28px 48px 24px 44px;
-  padding: 30px 22px;
+  flex: 0 0 310px;
+  width: 310px;
   z-index: 2;
-  background: rgba(16, 18, 28, 0.52);
-  border: 1px solid rgba(255, 255, 255, 0.08);
   animation: floatPass 11s ease-in-out 0.6s infinite;
 }
 
-.float-card-4 .card-title {
-  font-size: 21px;
+.float-card-4 .floating-card {
+  border-radius: 30px 50px 26px 46px;
+  padding: 34px 26px;
+  background: rgba(16, 18, 28, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
-/* Dynamic Organic Spatial Floating Keyframes */
+.float-card-4 .card-title {
+  font-size: 22px;
+}
+
+/* Dynamic Spatial Floating Trajectories on Wrappers (No Hover Conflicts!) */
 @keyframes floatDlp {
-  0% { transform: translateY(-32px) rotate(-2deg) scale(1.04); }
-  50% { transform: translateY(-46px) rotate(-3deg) scale(1.04); }
-  100% { transform: translateY(-32px) rotate(-2deg) scale(1.04); }
+  0% { transform: translateY(-34px) rotate(-2deg) scale(1.04); }
+  50% { transform: translateY(-50px) rotate(-3.2deg) scale(1.04); }
+  100% { transform: translateY(-34px) rotate(-2deg) scale(1.04); }
 }
 
 @keyframes floatMpeg {
-  0% { transform: translateY(52px) rotate(2.2deg) scale(0.98); }
-  50% { transform: translateY(68px) rotate(3.4deg) scale(0.98); }
-  100% { transform: translateY(52px) rotate(2.2deg) scale(0.98); }
+  0% { transform: translateY(56px) rotate(2.2deg) scale(0.98); }
+  50% { transform: translateY(74px) rotate(3.5deg) scale(0.98); }
+  100% { transform: translateY(56px) rotate(2.2deg) scale(0.98); }
 }
 
 @keyframes floatCompress {
-  0% { transform: translateY(-12px) rotate(-1.2deg) scale(1.01); }
-  50% { transform: translateY(-24px) rotate(-0.4deg) scale(1.01); }
-  100% { transform: translateY(-12px) rotate(-1.2deg) scale(1.01); }
+  0% { transform: translateY(-14px) rotate(-1.2deg) scale(1.01); }
+  50% { transform: translateY(-28px) rotate(-0.3deg) scale(1.01); }
+  100% { transform: translateY(-14px) rotate(-1.2deg) scale(1.01); }
 }
 
 @keyframes floatPass {
-  0% { transform: translateY(44px) rotate(1.8deg) scale(0.94); }
-  50% { transform: translateY(58px) rotate(2.8deg) scale(0.94); }
-  100% { transform: translateY(44px) rotate(1.8deg) scale(0.94); }
+  0% { transform: translateY(48px) rotate(1.8deg) scale(0.94); }
+  50% { transform: translateY(64px) rotate(2.9deg) scale(0.94); }
+  100% { transform: translateY(48px) rotate(1.8deg) scale(0.94); }
 }
 
-/* Hover on card elevates to the absolute top of Z-space */
-.floating-card:hover,
-.floating-card:focus-visible {
-  animation-play-state: paused;
-  z-index: 20 !important;
-  transform: translateY(-22px) scale(1.07) !important;
-  background: rgba(22, 26, 38, 0.92) !important;
-  border-color: var(--card-border-hover) !important;
-  box-shadow: 0 35px 85px -10px rgba(0, 0, 0, 0.95);
+/* Inner Floating Card: Visual styling, Translucency, Smooth Hover without Geometry Shift */
+.floating-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(34px);
+  box-shadow: var(--shadow-float);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease, filter 0.3s ease;
+  overflow: hidden;
+}
+
+/* Hover on wrapper triggers inner card visual brilliance with ZERO jitter */
+.card-wrapper:hover .floating-card,
+.card-wrapper:focus-visible .floating-card {
+  background: rgba(22, 26, 38, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  box-shadow: 0 0 50px -5px var(--card-accent, rgba(200, 240, 60, 0.4)), 0 35px 85px -10px rgba(0, 0, 0, 0.95);
+  filter: brightness(1.08);
 }
 
 .card-glow {
@@ -544,8 +543,8 @@ body.workspace-open .landing-view {
   pointer-events: none;
 }
 
-.floating-card:hover .card-glow {
-  opacity: 0.35;
+.card-wrapper:hover .card-glow {
+  opacity: 0.45;
 }
 
 .card-inner {
@@ -559,7 +558,7 @@ body.workspace-open .landing-view {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .card-eyebrow {
@@ -573,7 +572,7 @@ body.workspace-open .landing-view {
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
-  padding: 3px 8px;
+  padding: 4px 9px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
@@ -596,10 +595,10 @@ body.workspace-open .landing-view {
 }
 
 .card-desc {
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.6;
   color: var(--text-sub);
-  margin-bottom: 26px;
+  margin-bottom: 28px;
   flex-grow: 1;
 }
 
@@ -617,7 +616,7 @@ body.workspace-open .landing-view {
   transition: transform 0.2s ease, gap 0.2s ease;
 }
 
-.floating-card:hover .card-launch-btn {
+.card-wrapper:hover .card-launch-btn {
   gap: 10px;
 }
 
@@ -1061,15 +1060,26 @@ select:focus {
 /* ==========================================================================
    RESPONSIVE MEDIA QUERIES
    ========================================================================== */
-@media (max-width: 1200px) {
+@media (max-width: 1360px) {
   .floating-cards-container {
-    gap: 16px;
+    max-width: 1200px;
+  }
+  .float-card-1 { flex: 0 0 340px; width: 340px; }
+  .float-card-2 { flex: 0 0 290px; width: 290px; }
+  .float-card-3 { flex: 0 0 310px; width: 310px; }
+  .float-card-4 { flex: 0 0 280px; width: 280px; }
+  .hero-title { font-size: 60px; }
+}
+
+@media (max-width: 1080px) {
+  .floating-cards-container {
+    gap: 20px;
   }
   .float-card-1, .float-card-2, .float-card-3, .float-card-4 {
     margin-right: 0;
   }
   .hero-title {
-    font-size: 54px;
+    font-size: 50px;
   }
 }
 
@@ -1082,7 +1092,7 @@ select:focus {
   .float-card-1, .float-card-2, .float-card-3, .float-card-4 {
     flex: 0 0 auto;
     width: 100%;
-    max-width: 380px;
+    max-width: 420px;
     margin: 0;
     transform: none !important;
     animation: none !important;

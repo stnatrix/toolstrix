@@ -11,15 +11,14 @@
 </head>
 <body>
 
-<!-- Ambient Grainient Atmosphere: Multi-point glowing environment -->
+<!-- Ambient Grainient Atmosphere: Living blended environment -->
 <div class="grainient-bg">
-  <div class="ambient-glow glow-top-left"></div>
-  <div class="ambient-glow glow-center"></div>
-  <div class="ambient-glow glow-top-right"></div>
-  <div class="ambient-glow glow-1"></div>
-  <div class="ambient-glow glow-2"></div>
-  <div class="ambient-glow glow-3"></div>
-  <div class="ambient-wave"></div>
+  <div class="ambient-blob blob-top-left"></div>
+  <div class="ambient-blob blob-center-right"></div>
+  <div class="ambient-blob blob-bottom-left"></div>
+  <div class="ambient-blob blob-bottom-right"></div>
+  <div class="ambient-blob blob-bottom-center"></div>
+  <div class="cursor-glow" id="cursor-glow"></div>
   <div class="noise-overlay"></div>
 </div>
 
@@ -49,89 +48,97 @@
       <span class="hero-gradient-text">on the Internet.</span>
     </h1>
 
-    <!-- Floating Cards Section on Ambient Wave Space -->
+    <!-- Floating Cards Spatial Cluster (Separated wrapper & inner card) -->
     <div class="floating-cards-container">
       
       <!-- Card 1: DLP -->
-      <div class="floating-card float-card-1" data-tool="dlp" tabindex="0">
-        <div class="card-glow" style="--card-accent: #00e5ff;"></div>
-        <div class="card-inner">
-          <div class="card-top">
-            <span class="card-eyebrow">// media retrieval</span>
-            <span class="card-tag tag-dlp">yt-dlp</span>
-          </div>
-          <h2 class="card-title">natrix<span class="dot">.</span>dlp</h2>
-          <p class="card-desc">
-            Скачивание видео и аудио в высоком качестве с любых площадок.
-          </p>
-          <div class="card-footer">
-            <span class="card-launch-btn">
-              Запустить
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
+      <div class="card-wrapper float-card-1" data-tool="dlp" tabindex="0">
+        <div class="floating-card">
+          <div class="card-glow" style="--card-accent: #00e5ff;"></div>
+          <div class="card-inner">
+            <div class="card-top">
+              <span class="card-eyebrow">// media retrieval</span>
+              <span class="card-tag tag-dlp">yt-dlp</span>
+            </div>
+            <h2 class="card-title">natrix<span class="dot">.</span>dlp</h2>
+            <p class="card-desc">
+              Скачивание видео и аудио в высоком качестве с любых площадок.
+            </p>
+            <div class="card-footer">
+              <span class="card-launch-btn">
+                Запустить
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Card 2: MPEG -->
-      <div class="floating-card float-card-2" data-tool="mpeg" tabindex="0">
-        <div class="card-glow" style="--card-accent: #ff5252;"></div>
-        <div class="card-inner">
-          <div class="card-top">
-            <span class="card-eyebrow">// local editing</span>
-            <span class="card-tag tag-mpeg">ffmpeg</span>
-          </div>
-          <h2 class="card-title">natrix<span class="dot">.</span>mpeg</h2>
-          <p class="card-desc">
-            Обрезка, громкость, фильтры, ресайз и конвертация прямо в браузере.
-          </p>
-          <div class="card-footer">
-            <span class="card-launch-btn">
-              Запустить
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
+      <div class="card-wrapper float-card-2" data-tool="mpeg" tabindex="0">
+        <div class="floating-card">
+          <div class="card-glow" style="--card-accent: #ff5252;"></div>
+          <div class="card-inner">
+            <div class="card-top">
+              <span class="card-eyebrow">// local editing</span>
+              <span class="card-tag tag-mpeg">ffmpeg</span>
+            </div>
+            <h2 class="card-title">natrix<span class="dot">.</span>mpeg</h2>
+            <p class="card-desc">
+              Обрезка, громкость, фильтры, ресайз и конвертация прямо в браузере.
+            </p>
+            <div class="card-footer">
+              <span class="card-launch-btn">
+                Запустить
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Card 3: COMPRESS -->
-      <div class="floating-card float-card-3" data-tool="compress" tabindex="0">
-        <div class="card-glow" style="--card-accent: #ffb300;"></div>
-        <div class="card-inner">
-          <div class="card-top">
-            <span class="card-eyebrow">// video compression</span>
-            <span class="card-tag tag-compress">bitrate match</span>
-          </div>
-          <h2 class="card-title">natrix<span class="dot">.</span>compress</h2>
-          <p class="card-desc">
-            Сжатие видео под точный размер в МБ с автоподбором битрейта.
-          </p>
-          <div class="card-footer">
-            <span class="card-launch-btn">
-              Запустить
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
+      <div class="card-wrapper float-card-3" data-tool="compress" tabindex="0">
+        <div class="floating-card">
+          <div class="card-glow" style="--card-accent: #ffb300;"></div>
+          <div class="card-inner">
+            <div class="card-top">
+              <span class="card-eyebrow">// video compression</span>
+              <span class="card-tag tag-compress">bitrate match</span>
+            </div>
+            <h2 class="card-title">natrix<span class="dot">.</span>compress</h2>
+            <p class="card-desc">
+              Сжатие видео под точный размер в МБ с автоподбором битрейта.
+            </p>
+            <div class="card-footer">
+              <span class="card-launch-btn">
+                Запустить
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Card 4: PASS -->
-      <div class="floating-card float-card-4" data-tool="pass" tabindex="0">
-        <div class="card-glow" style="--card-accent: #b388ff;"></div>
-        <div class="card-inner">
-          <div class="card-top">
-            <span class="card-eyebrow">// credentials</span>
-            <span class="card-tag tag-pass">eff diceware</span>
-          </div>
-          <h2 class="card-title">natrix<span class="dot">.</span>pass</h2>
-          <p class="card-desc">
-            Генерация стойких паролей и мнемонических фраз с энтропией.
-          </p>
-          <div class="card-footer">
-            <span class="card-launch-btn">
-              Запустить
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
+      <div class="card-wrapper float-card-4" data-tool="pass" tabindex="0">
+        <div class="floating-card">
+          <div class="card-glow" style="--card-accent: #b388ff;"></div>
+          <div class="card-inner">
+            <div class="card-top">
+              <span class="card-eyebrow">// credentials</span>
+              <span class="card-tag tag-pass">eff diceware</span>
+            </div>
+            <h2 class="card-title">natrix<span class="dot">.</span>pass</h2>
+            <p class="card-desc">
+              Генерация стойких паролей и мнемонических фраз с энтропией.
+            </p>
+            <div class="card-footer">
+              <span class="card-launch-btn">
+                Запустить
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </div>
           </div>
         </div>
       </div>
