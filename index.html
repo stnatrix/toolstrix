@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>natrix.pass</title>
-  
-  <!-- Google Fonts -->
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -16,16 +15,15 @@
       --card-bg: rgba(26, 27, 38, 0.65);
       --card-border: rgba(187, 154, 247, 0.15);
       --text-main: #cdd6f4;
-      --text-muted: #9ece6a; /* Cozy green for details */
+      --text-muted: #9ece6a; 
       --text-secondary: #a6adc8;
-      
-      /* Pastel Lofi Colors */
-      --primary: #bb9af7;      /* Lavender */
+
+      --primary: #bb9af7;      
       --primary-glow: rgba(187, 154, 247, 0.4);
-      --accent-peach: #ff9e64; /* Peach */
-      --accent-mint: #73daca;  /* Mint */
-      --accent-blue: #7accff;  /* Soft Blue */
-      --accent-rose: #f7768e;  /* Soft Red */
+      --accent-peach: #ff9e64; 
+      --accent-mint: #73daca;  
+      --accent-blue: #7accff;  
+      --accent-rose: #f7768e;  
       
       --font-ui: 'Inter', sans-serif;
       --font-title: 'Quicksand', sans-serif;
@@ -52,7 +50,6 @@
       position: relative;
     }
 
-    /* Ambient Background Glows */
     .ambient-glow {
       position: absolute;
       width: 400px;
@@ -83,7 +80,6 @@
       100% { transform: translate(60px, 40px) scale(1.2); }
     }
 
-    /* Main Container */
     .container {
       width: 100%;
       max-width: 520px;
@@ -91,7 +87,6 @@
       position: relative;
     }
 
-    /* Card Layout */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -102,7 +97,6 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
-    /* Header */
     .header {
       text-align: center;
       margin-bottom: 24px;
@@ -127,7 +121,6 @@
       font-style: italic;
     }
 
-    /* Output Section */
     .output-container {
       position: relative;
       background: rgba(0, 0, 0, 0.25);
@@ -187,7 +180,6 @@
       background: rgba(187, 154, 247, 0.1);
     }
 
-    /* Toast Notification */
     .toast {
       position: absolute;
       top: -35px;
@@ -209,7 +201,6 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* Security Meter */
     .strength-meter {
       margin-bottom: 24px;
     }
@@ -243,7 +234,6 @@
       transition: background-color 0.4s ease;
     }
 
-    /* Generator Mode Tabs */
     .tabs {
       display: flex;
       background: rgba(0, 0, 0, 0.15);
@@ -271,7 +261,6 @@
       color: var(--primary);
     }
 
-    /* Form Settings */
     .settings-group {
       display: none;
     }
@@ -299,7 +288,6 @@
       font-weight: 600;
     }
 
-    /* Range Slider Styling */
     input[type="range"] {
       -webkit-appearance: none;
       width: 100%;
@@ -326,7 +314,6 @@
       box-shadow: 0 0 12px rgba(115, 218, 202, 0.5);
     }
 
-    /* Checkboxes & Switches */
     .checkbox-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -384,7 +371,6 @@
       opacity: 1;
     }
 
-    /* Radio/Switch Selector for separators/language */
     .radio-pill-group {
       display: flex;
       background: rgba(0, 0, 0, 0.15);
@@ -414,7 +400,6 @@
       color: var(--primary);
     }
 
-    /* Main Generate Button */
     .generate-btn {
       width: 100%;
       background: linear-gradient(135deg, var(--primary), var(--accent-peach));
@@ -444,7 +429,6 @@
       transform: translateY(0);
     }
 
-    /* History Log Section */
     .history-section {
       margin-top: 24px;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -488,7 +472,6 @@
       padding-right: 4px;
     }
 
-    /* Scrollbar */
     .history-list::-webkit-scrollbar {
       width: 4px;
     }
@@ -569,20 +552,17 @@
 </head>
 <body>
 
-  <!-- Ambient background elements -->
   <div class="ambient-glow glow-1"></div>
   <div class="ambient-glow glow-2"></div>
 
   <div class="container">
     <div class="card">
-      
-      <!-- Header -->
+
       <div class="header">
         <h1>🔑 natrix.pass</h1>
         <p>Генератор надежных паролей</p>
       </div>
 
-      <!-- Main Display -->
       <div class="output-container" id="output-wrapper">
         <div class="toast" id="copy-toast">Скопировано!</div>
         <div class="password-display empty" id="password-display">Нажмите «Сгенерировать»...</div>
@@ -596,7 +576,6 @@
         </div>
       </div>
 
-      <!-- Strength Meter -->
       <div class="strength-meter">
         <div class="strength-header">
           <span>Сложность: <span class="strength-label" id="strength-label">Не определена</span></span>
@@ -610,13 +589,11 @@
         </div>
       </div>
 
-      <!-- Mode Tabs -->
       <div class="tabs">
         <button class="tab-btn active" id="tab-pass">Пароль</button>
         <button class="tab-btn" id="tab-phrase">Фраза</button>
       </div>
 
-      <!-- Password Settings Group -->
       <div class="settings-group active" id="group-pass">
         <div class="row">
           <div class="row-header">
@@ -655,7 +632,6 @@
         </div>
       </div>
 
-      <!-- Passphrase Settings Group -->
       <div class="settings-group" id="group-phrase">
         <div class="row">
           <div class="row-header">
@@ -706,13 +682,11 @@
         </div>
       </div>
 
-      <!-- Generate Button -->
       <button class="generate-btn" id="generate-btn">
         <span>Сгенерировать</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
       </button>
 
-      <!-- History -->
       <div class="history-section">
         <div class="history-header">
           <h3>История генерации</h3>
@@ -727,7 +701,6 @@
   </div>
 
   <script>
-    // Wordlists for Memorable Passphrases
     const WORDLISTS = {
       en: [
         "cozy", "lofi", "chill", "rain", "coffee", "cloud", "sunset", "dream", "autumn", "sleepy", 
@@ -746,7 +719,6 @@
       ]
     };
 
-    // DOM Elements
     const elements = {
       passwordDisplay: document.getElementById('password-display'),
       outputWrapper: document.getElementById('output-wrapper'),
@@ -768,7 +740,6 @@
       groupPass: document.getElementById('group-pass'),
       groupPhrase: document.getElementById('group-phrase'),
 
-      // Password Options
       lenSlider: document.getElementById('len-slider'),
       lenVal: document.getElementById('len-val'),
       chkUpper: document.getElementById('chk-upper'),
@@ -777,17 +748,14 @@
       chkSyms: document.getElementById('chk-syms'),
       chkAvoid: document.getElementById('chk-avoid'),
 
-      // Passphrase Options
       wordsSlider: document.getElementById('words-slider'),
       wordsVal: document.getElementById('words-val'),
 
-      // Action & History
       generateBtn: document.getElementById('generate-btn'),
       clearBtn: document.getElementById('clear-btn'),
       historyList: document.getElementById('history-list')
     };
 
-    // State Variables
     let currentMode = 'pass'; // 'pass' or 'phrase'
     let history = [];
     let settings = {
@@ -795,20 +763,16 @@
       phrase: { words: 4, sep: '-', lang: 'en' }
     };
 
-    // Initialize App
     document.addEventListener('DOMContentLoaded', () => {
       loadState();
       setupEventListeners();
       generate(); // Generate an initial password
     });
 
-    // Setup Event Listeners
     function setupEventListeners() {
-      // Tabs
       elements.tabPass.addEventListener('click', () => setMode('pass'));
       elements.tabPhrase.addEventListener('click', () => setMode('phrase'));
 
-      // Sliders
       elements.lenSlider.addEventListener('input', (e) => {
         elements.lenVal.textContent = e.target.value;
         settings.pass.len = parseInt(e.target.value);
@@ -822,7 +786,6 @@
         generate();
       });
 
-      // Checkboxes & Inputs change trigger auto-regeneration
       [elements.chkUpper, elements.chkLower, elements.chkNums, elements.chkSyms, elements.chkAvoid].forEach(chk => {
         chk.addEventListener('change', () => {
           updateSettingsFromDOM();
@@ -831,7 +794,6 @@
         });
       });
 
-      // Radio groups (separator & language)
       document.querySelectorAll('input[name="sep"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
           settings.phrase.sep = e.target.value;
@@ -847,7 +809,6 @@
         });
       });
 
-      // Action buttons
       elements.generateBtn.addEventListener('click', generate);
       elements.regenerateBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -861,7 +822,6 @@
       elements.clearBtn.addEventListener('click', clearHistory);
     }
 
-    // Set active mode (Password vs Passphrase)
     function setMode(mode) {
       currentMode = mode;
       if (mode === 'pass') {
@@ -878,7 +838,6 @@
       generate();
     }
 
-    // Read current settings state from DOM (for checkboxes)
     function updateSettingsFromDOM() {
       settings.pass.upper = elements.chkUpper.checked;
       settings.pass.lower = elements.chkLower.checked;
@@ -887,7 +846,6 @@
       settings.pass.avoid = elements.chkAvoid.checked;
     }
 
-    // LocalStorage Utilities
     function saveSettings() {
       localStorage.setItem('natrix.pass.settings', JSON.stringify({ currentMode, settings }));
     }
@@ -899,7 +857,6 @@
         currentMode = parsed.currentMode;
         settings = parsed.settings;
         setMode(currentMode);
-        // Sync DOM inputs with loaded settings
         elements.lenSlider.value = settings.pass.len;
         elements.lenVal.textContent = settings.pass.len;
         elements.wordsSlider.value = settings.phrase.words;
@@ -917,7 +874,6 @@
       }
     }
 
-    // Cryptographically secure random integer generation
     function getRandomInt(max) {
       if (max <= 0) return 0;
       const array = new Uint32Array(1);
@@ -925,7 +881,6 @@
       return array[0] % max;
     }
 
-    // Main Generate trigger
     function generate() {
       let pwd = '';
       if (currentMode === 'pass') {
@@ -947,11 +902,9 @@
       const entropy = calculateEntropy(pwd);
       updateStrength(entropy, pwd.length);
 
-      // Add to history
       addToHistory(pwd);
     }
 
-    // Generator logic: Standard Password
     function generatePassword() {
       const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Excluding similar chars if needed
       const upperSimilar = 'IO';
@@ -964,7 +917,6 @@
       let chars = '';
       let mustInclude = [];
 
-      // Combine character sets based on selections
       if (settings.pass.upper) {
         const set = upper + (settings.pass.avoid ? '' : upperSimilar);
         chars += set;
@@ -990,17 +942,14 @@
       let pwdArr = [];
       const totalLen = settings.pass.len;
 
-      // Populate array with must-include values first to guarantee complexity
       for (let i = 0; i < mustInclude.length && i < totalLen; i++) {
         pwdArr.push(mustInclude[i]);
       }
 
-      // Fill rest
       while (pwdArr.length < totalLen) {
         pwdArr.push(chars[getRandomInt(chars.length)]);
       }
 
-      // Shuffle array securely
       for (let i = pwdArr.length - 1; i > 0; i--) {
         const j = getRandomInt(i + 1);
         const temp = pwdArr[i];
@@ -1011,7 +960,6 @@
       return pwdArr.join('');
     }
 
-    // Generator logic: Passphrase
     function generatePassphrase() {
       const list = WORDLISTS[settings.phrase.lang] || WORDLISTS.en;
       const count = settings.phrase.words;
@@ -1026,13 +974,11 @@
       return words.join(sep);
     }
 
-    // Calculate Entropy in Bits
     function calculateEntropy(pwd) {
       if (!pwd) return 0;
       let poolSize = 0;
 
       if (currentMode === 'pass') {
-        // Estimate pool size dynamically based on password content
         let hasUpper = false, hasLower = false, hasNums = false, hasSyms = false;
         
         for (let char of pwd) {
@@ -1047,10 +993,8 @@
         if (hasNums) poolSize += 10;
         if (hasSyms) poolSize += 26; // Approx
       } else {
-        // For passphrases, entropy is based on dictionary size
         const list = WORDLISTS[settings.phrase.lang] || WORDLISTS.en;
         poolSize = list.length;
-        // Formula for passphrase entropy: L * log2(poolSize)
         return settings.phrase.words * Math.log2(poolSize);
       }
 
@@ -1058,11 +1002,9 @@
       return pwd.length * Math.log2(poolSize);
     }
 
-    // Update Visual Strength Meter
     function updateStrength(entropy, len) {
       elements.entropyDisplay.textContent = `${Math.round(entropy)} bits`;
 
-      // Set strength category & colors
       let score = 0; // 0 to 4
       let label = 'Низкая';
       let colorClass = 'var(--accent-rose)';
@@ -1090,7 +1032,6 @@
       elements.strengthLabel.textContent = label;
       elements.strengthLabel.style.color = score === 0 ? 'var(--text-secondary)' : colorClass;
 
-      // Color segments
       elements.segs.forEach((seg, idx) => {
         if (idx < score) {
           seg.style.backgroundColor = colorClass;
@@ -1102,9 +1043,7 @@
       });
     }
 
-    // Add generated password to history
     function addToHistory(pwd) {
-      // Prevent duplicates in history immediately next to each other
       if (history.length > 0 && history[0] === pwd) return;
 
       history.unshift(pwd);
@@ -1116,7 +1055,6 @@
       renderHistory();
     }
 
-    // Render history DOM list
     function renderHistory() {
       if (history.length === 0) {
         elements.historyList.innerHTML = '<div class="empty-history">История пуста</div>';
@@ -1137,7 +1075,6 @@
         const actions = document.createElement('div');
         actions.className = 'history-actions';
 
-        // Copy button
         const cpBtn = document.createElement('button');
         cpBtn.className = 'history-icon-btn';
         cpBtn.title = 'Копировать';
@@ -1147,7 +1084,6 @@
           copyToClipboard(pwd);
         });
 
-        // Delete button
         const delBtn = document.createElement('button');
         delBtn.className = 'history-icon-btn delete';
         delBtn.title = 'Удалить';
@@ -1166,14 +1102,12 @@
       });
     }
 
-    // Delete single history item
     function deleteHistoryItem(idx) {
       history.splice(idx, 1);
       saveHistory();
       renderHistory();
     }
 
-    // Clear entire history
     function clearHistory() {
       if (confirm('Очистить всю историю сгенерированных паролей?')) {
         history = [];
@@ -1186,19 +1120,16 @@
       localStorage.setItem('natrix.pass.history', JSON.stringify(history));
     }
 
-    // Clipboard Copy Helper for main display
     function copyCurrentPassword() {
       const pwd = elements.passwordDisplay.textContent;
       if (!pwd || elements.passwordDisplay.classList.contains('empty')) return;
       copyToClipboard(pwd);
     }
 
-    // Secure Copy to Clipboard
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
         showToast();
       }).catch(err => {
-        // Fallback for older browsers or insecure environments
         const textArea = document.createElement("textarea");
         textArea.value = text;
         textArea.style.position = "fixed";
@@ -1215,7 +1146,6 @@
       });
     }
 
-    // Show Copy Toast Alert
     let toastTimeout;
     function showToast() {
       elements.copyToast.classList.add('show');

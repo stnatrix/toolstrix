@@ -4,14 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>natrix.tools — Personal Media & Utility Suite</title>
-<!-- Шрифты самохостятся в /static/fonts — внешних запросов у страницы нет.
-     Это обязательно: под COEP require-corp (нужен для SharedArrayBuffer)
-     все ресурсы должны быть локальными. -->
 <link rel="stylesheet" href="/static/style.css?v=2.011">
 </head>
 <body>
 
-<!-- Ambient Grainient Atmosphere: Living blended environment -->
 <div class="grainient-bg">
   <div class="ambient-blob blob-top-left"></div>
   <div class="ambient-blob blob-center-right"></div>
@@ -22,7 +18,6 @@
   <div class="noise-overlay"></div>
 </div>
 
-<!-- Header -->
 <header class="natrix-header">
   <div class="header-left">
     <a href="#" class="natrix-logo" id="logo-home">
@@ -40,7 +35,6 @@
   </div>
 </header>
 
-<!-- ======================= LANDING PAGE ======================= -->
 <main class="landing-view" id="landing-view">
   <div class="hero-container">
     <h1 class="hero-title">
@@ -48,10 +42,8 @@
       <span class="hero-gradient-text">on the Internet.</span>
     </h1>
 
-    <!-- Floating Cards Spatial Cluster (Separated wrapper & inner card) -->
     <div class="floating-cards-container">
       
-      <!-- Card 1: DLP -->
       <div class="card-wrapper float-card-1" data-tool="dlp" tabindex="0">
         <div class="floating-card">
           <div class="card-glow" style="--card-accent: #00e5ff;"></div>
@@ -74,7 +66,6 @@
         </div>
       </div>
 
-      <!-- Card 2: MPEG -->
       <div class="card-wrapper float-card-2" data-tool="mpeg" tabindex="0">
         <div class="floating-card">
           <div class="card-glow" style="--card-accent: #ff5252;"></div>
@@ -97,7 +88,6 @@
         </div>
       </div>
 
-      <!-- Card 3: COMPRESS -->
       <div class="card-wrapper float-card-3" data-tool="compress" tabindex="0">
         <div class="floating-card">
           <div class="card-glow" style="--card-accent: #ffb300;"></div>
@@ -120,7 +110,6 @@
         </div>
       </div>
 
-      <!-- Card 4: PASS -->
       <div class="card-wrapper float-card-4" data-tool="pass" tabindex="0">
         <div class="floating-card">
           <div class="card-glow" style="--card-accent: #b388ff;"></div>
@@ -147,11 +136,9 @@
   </div>
 </main>
 
-<!-- ======================= WORKSPACE MODAL OVERLAY ======================= -->
 <div class="workspace-overlay" id="workspace-overlay">
   <div class="workspace-panel" id="workspace-panel">
     
-    <!-- Workspace Top Bar -->
     <div class="workspace-header">
       <button class="back-btn" id="workspace-back-btn" type="button">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -167,10 +154,8 @@
       </div>
     </div>
 
-    <!-- Workspace Body: Modules -->
     <div class="workspace-body">
 
-      <!-- ============================= DLP ============================= -->
       <section class="section" id="section-dlp">
         <div class="section-header-wrap">
           <div class="section-eyebrow">// media retrieval</div>
@@ -201,7 +186,6 @@
         </div>
       </section>
 
-      <!-- ============================ MPEG ============================ -->
       <section class="section" id="section-mpeg">
         <div class="section-header-wrap">
           <div class="section-eyebrow">// local media editing</div>
@@ -250,7 +234,6 @@
         </div>
       </section>
 
-      <!-- ============================ COMPRESS ============================ -->
       <section class="section" id="section-compress">
         <div class="section-header-wrap">
           <div class="section-eyebrow">// local video compression</div>
@@ -258,7 +241,6 @@
           <p class="section-sub">Умное сжатие видео под нужный размер с автоподбором битрейта (ffmpeg.wasm).</p>
         </div>
 
-        <!-- Upload Card -->
         <div class="card" id="compress-upload-card">
           <label class="field-label">Файл видео</label>
           <div class="dropzone" id="compress-dropzone">
@@ -268,7 +250,6 @@
           <div class="status-line" id="compress-load-status"></div>
         </div>
 
-        <!-- Workspace (hidden by default) -->
         <div id="compress-workspace" style="display:none;">
           <div class="card">
             <div id="compress-preview-wrap"></div>
@@ -285,13 +266,11 @@
               <button type="button" class="size-btn" id="compress-custom-btn" data-size="custom">Свой...</button>
             </div>
 
-            <!-- Custom size input wrapper (hidden by default) -->
             <div id="compress-custom-size-wrap" style="display: none; margin-bottom: 16px;">
               <label class="field-label" for="compress-custom-size">Введите размер в МБ</label>
               <input type="number" id="compress-custom-size" min="1" step="0.5" value="25">
             </div>
 
-            <!-- Options -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
               <div>
                 <label class="field-label" for="compress-opt-scale">Максимальное разрешение</label>
@@ -322,7 +301,6 @@
               </select>
             </div>
 
-            <!-- Dynamic Bitrate Info / Warning -->
             <div class="hint" id="compress-bitrate-info" style="margin-top: 16px; font-family: var(--font-mono); font-size: 11px;"></div>
 
             <div class="progress-wrap" id="compress-progress-wrap" style="margin-top: 20px;">
@@ -336,7 +314,6 @@
             </div>
           </div>
 
-          <!-- Result Card -->
           <div class="card" id="compress-result-card" style="display:none;">
             <label class="field-label">Сжатый результат</label>
             <div id="compress-result-preview"></div>
@@ -348,7 +325,6 @@
         </div>
       </section>
 
-      <!-- ============================ PASS ============================ -->
       <section class="section" id="section-pass">
         <div class="section-header-wrap">
           <div class="section-eyebrow">// credentials generation</div>
@@ -356,7 +332,6 @@
           <p class="section-sub">Генерация безопасных паролей и мнемонических фраз на стороне клиента.</p>
         </div>
 
-        <!-- Main Output Card -->
         <div class="card" style="position: relative;">
           <div class="toast" id="pass-toast" style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: var(--accent-lime); color: #000000; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; pointer-events: none; opacity: 0; transition: all 0.2s; box-shadow: 0 4px 12px rgba(200, 240, 60, 0.4);">Скопировано!</div>
           <label class="field-label">Результат (нажмите для копирования)</label>
@@ -365,7 +340,6 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-left: 8px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </div>
 
-          <!-- Strength Meter -->
           <div style="margin-top: 16px;">
             <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono); color: var(--text-dim); margin-bottom: 6px;">
               <span>Сложность: <span id="pass-strength-label" style="font-weight: 600;">Не определена</span></span>
@@ -380,14 +354,12 @@
           </div>
         </div>
 
-        <!-- Mode Selector & Settings -->
         <div class="card">
           <div class="mode-toggle" id="pass-mode-toggle">
             <button data-mode="pass" class="active" type="button">Пароль</button>
             <button data-mode="phrase" type="button">Фраза</button>
           </div>
 
-          <!-- Password Settings -->
           <div id="pass-settings-group" class="pass-settings-subgroup active">
             <div style="margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
@@ -416,7 +388,6 @@
             </div>
           </div>
 
-          <!-- Passphrase Settings -->
           <div id="phrase-settings-group" class="pass-settings-subgroup" style="display: none;">
             <div style="margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
@@ -451,7 +422,6 @@
           </div>
         </div>
 
-        <!-- History Card -->
         <div class="card" id="pass-history-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <label class="field-label" style="margin-bottom: 0;">История генерации</label>
@@ -471,7 +441,6 @@
   <span class="footer-version">v2.0.0</span>
 </footer>
 
-<!-- Scripts: SFX -> FFmpeg -> Tools -> App -->
 <script src="/static/sfx.js?v=2.0.0"></script>
 <script src="/static/ffmpeg/ffmpeg.js?v=1.0.2"></script>
 <script src="/static/ffmpeg-helper.js?v=1.0.9"></script>
@@ -479,7 +448,6 @@
 <script src="/static/dlp.js?v=2.0.0"></script>
 <script src="/static/mpeg.js?v=2.0.0"></script>
 <script src="/static/compress.js?v=2.0.0"></script>
-<!-- словарь EFF должен быть загружен до pass.js -->
 <script src="/static/wordlist-en.js?v=1.0.9"></script>
 <script src="/static/pass.js?v=2.0.0"></script>
 <script src="/static/app.js?v=2.0.0"></script>

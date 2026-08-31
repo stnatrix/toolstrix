@@ -1,6 +1,3 @@
-/* ==========================================================================
-   NATRIX — Self-hosted Fonts (Inter & JetBrains Mono)
-   ========================================================================== */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -66,9 +63,6 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* ==========================================================================
-   GRAINIENT DESIGN TOKENS
-   ========================================================================== */
 :root {
   --bg-pure: #08080f;
   --card-inner-bg: #07090d;
@@ -80,12 +74,10 @@
   --text-dim: #64748b;
   --text-faint: #334155;
 
-  /* Signature Grainient Lime CTA */
   --accent-lime: #c8f03c;
   --accent-lime-hover: #d7fa4c;
   --accent-lime-glow: rgba(200, 240, 60, 0.4);
 
-  /* Tool Accents */
   --dlp: #00e5ff;
   --dlp-glow: rgba(0, 229, 255, 0.45);
   --mpeg: #ff5252;
@@ -127,9 +119,6 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ==========================================================================
-   LIVING BLENDED GRADIENT ATMOSPHERE (SPACE & DEEP GLOW NEBULA)
-   ========================================================================== */
 .grainient-bg {
   position: fixed;
   inset: 0;
@@ -148,7 +137,6 @@ html, body {
   will-change: transform;
 }
 
-/* 1. Top-Left: Electric Deep Indigo & Radiant Cyan Glow */
 .blob-top-left {
   width: 1000px;
   height: 1000px;
@@ -159,7 +147,6 @@ html, body {
   animation: blobFloat1 22s ease-in-out infinite alternate;
 }
 
-/* 2. Center-Right: Deep Velvet Magenta & Cosmic Violet */
 .blob-center-right {
   width: 1050px;
   height: 950px;
@@ -170,7 +157,6 @@ html, body {
   animation: blobFloat2 25s ease-in-out infinite alternate;
 }
 
-/* 3. Bottom-Left: Celestial Cyan & Oceanic Deep Blue */
 .blob-bottom-left {
   width: 1200px;
   height: 1000px;
@@ -181,7 +167,6 @@ html, body {
   animation: blobFloat3 20s ease-in-out infinite alternate;
 }
 
-/* 4. Bottom-Right: Deep Cosmic Violet & Sapphire Glow */
 .blob-bottom-right {
   width: 1300px;
   height: 1050px;
@@ -192,7 +177,6 @@ html, body {
   animation: blobFloat4 24s ease-in-out infinite alternate;
 }
 
-/* 5. Center-Bottom: Deep Celestial Cyan & Indigo Pool */
 .blob-bottom-center {
   width: 1400px;
   height: 900px;
@@ -203,7 +187,6 @@ html, body {
   animation: blobFloat5 26s ease-in-out infinite alternate;
 }
 
-/* Living Fluid Drift Trajectories */
 @keyframes blobFloat1 {
   0% { transform: translate(0, 0) scale(1); }
   33% { transform: translate(80px, 50px) scale(1.12); }
@@ -239,7 +222,6 @@ html, body {
   100% { transform: translate(0, 0) scale(1); }
 }
 
-/* Interactive Cursor Reactive Ambient Glow */
 .cursor-glow {
   position: fixed;
   top: 0;
@@ -259,7 +241,6 @@ html, body {
   will-change: transform;
 }
 
-/* Cinematic Grain / Noise Texture */
 .noise-overlay {
   position: absolute;
   inset: 0;
@@ -268,9 +249,6 @@ html, body {
   pointer-events: none;
 }
 
-/* ==========================================================================
-   MINIMALIST HEADER
-   ========================================================================== */
 .natrix-header {
   position: relative;
   z-index: 20;
@@ -340,9 +318,6 @@ html, body {
   color: var(--text-dim);
 }
 
-/* ==========================================================================
-   MINIMALIST HERO & DEPTH
-   ========================================================================== */
 .landing-view {
   position: relative;
   z-index: 10;
@@ -382,9 +357,6 @@ body.workspace-open .landing-view {
   -webkit-text-fill-color: transparent;
 }
 
-/* ==========================================================================
-   FREEFORM SPATIAL CLUSTERING: STABLE HITBOXES & DECOUPLED FLOATING
-   ========================================================================== */
 .floating-cards-container {
   display: flex;
   flex-wrap: wrap;
@@ -398,16 +370,14 @@ body.workspace-open .landing-view {
   perspective: 1200px;
 }
 
-/* Outer Card Wrapper: Stable Hitbox, Floating Physics, Positioning, No Hover Transforms */
 .card-wrapper {
   position: relative;
   cursor: pointer;
   outline: none;
   will-change: transform;
-  transition: none; /* No transition fighting keyframe animation! */
+  transition: none; 
 }
 
-/* ---- Card 1: DLP (Foreground Hero Anchor / Largest Scale) ---- */
 .float-card-1 {
   flex: 0 0 380px;
   width: 380px;
@@ -428,7 +398,6 @@ body.workspace-open .landing-view {
   font-size: 26px;
 }
 
-/* ---- Card 2: MPEG (Mid-Depth / Sunk Down into Bottom Gradient) ---- */
 .float-card-2 {
   flex: 0 0 330px;
   width: 330px;
@@ -449,7 +418,6 @@ body.workspace-open .landing-view {
   font-size: 23px;
 }
 
-/* ---- Card 3: COMPRESS (Mid-Foreground / Offset Up & Right) ---- */
 .float-card-3 {
   flex: 0 0 350px;
   width: 350px;
@@ -470,7 +438,6 @@ body.workspace-open .landing-view {
   font-size: 24px;
 }
 
-/* ---- Card 4: PASS (Atmospheric Depth Plane / Compact & Sunk) ---- */
 .float-card-4 {
   flex: 0 0 310px;
   width: 310px;
@@ -490,7 +457,6 @@ body.workspace-open .landing-view {
   font-size: 22px;
 }
 
-/* Dynamic Spatial Floating Trajectories on Wrappers (No Hover Conflicts!) */
 @keyframes floatDlp {
   0% { transform: translateY(-34px) rotate(-2deg) scale(1.04); }
   50% { transform: translateY(-50px) rotate(-3.2deg) scale(1.04); }
@@ -515,7 +481,6 @@ body.workspace-open .landing-view {
   100% { transform: translateY(48px) rotate(1.8deg) scale(0.94); }
 }
 
-/* Inner Floating Card: Visual styling, Translucency, Smooth Hover without Geometry Shift */
 .floating-card {
   position: relative;
   width: 100%;
@@ -526,7 +491,6 @@ body.workspace-open .landing-view {
   overflow: hidden;
 }
 
-/* Hover on wrapper triggers inner card visual brilliance with ZERO jitter */
 .card-wrapper:hover .floating-card,
 .card-wrapper:focus-visible .floating-card {
   background: rgba(22, 26, 38, 0.9) !important;
@@ -622,9 +586,6 @@ body.workspace-open .landing-view {
   gap: 10px;
 }
 
-/* ==========================================================================
-   WORKSPACE MODAL OVERLAY (EXPANDED VIEW)
-   ========================================================================== */
 .workspace-overlay {
   position: fixed;
   inset: 0;
@@ -742,9 +703,6 @@ body.workspace-open .landing-view {
   overflow-y: auto;
 }
 
-/* ==========================================================================
-   TOOL SECTIONS & INTERACTIVE FORMS
-   ========================================================================== */
 .section {
   display: none;
 }
@@ -787,7 +745,6 @@ body.workspace-open .landing-view {
   color: var(--text-sub);
 }
 
-/* Cards inside workspace */
 .card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--card-border);
@@ -836,7 +793,6 @@ select:focus {
   line-height: 1.4;
 }
 
-/* Mode toggles */
 .mode-toggle {
   display: inline-flex;
   background: rgba(0, 0, 0, 0.4);
@@ -870,7 +826,6 @@ select:focus {
   font-weight: 600;
 }
 
-/* Primary Lime Action Button (Grainient style) */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -922,7 +877,6 @@ select:focus {
   align-items: center;
 }
 
-/* Dropzones */
 .dropzone {
   position: relative;
   border: 2px dashed rgba(255, 255, 255, 0.14);
@@ -955,7 +909,6 @@ select:focus {
   color: var(--text-sub);
 }
 
-/* Progress bar */
 .progress-wrap {
   display: none;
   width: 100%;
@@ -988,7 +941,6 @@ select:focus {
 .status-line.ok { color: var(--ok); }
 .status-line.error { color: var(--danger); }
 
-/* MPEG & Compress grids */
 .tool-grid,
 .size-grid {
   display: grid;
@@ -1036,9 +988,6 @@ select:focus {
   margin-top: 10px;
 }
 
-/* ==========================================================================
-   MINIMALIST FOOTER
-   ========================================================================== */
 .natrix-footer {
   position: relative;
   z-index: 10;
@@ -1059,9 +1008,6 @@ select:focus {
   border-radius: 4px;
 }
 
-/* ==========================================================================
-   RESPONSIVE MEDIA QUERIES
-   ========================================================================== */
 @media (max-width: 1360px) {
   .floating-cards-container {
     max-width: 1200px;

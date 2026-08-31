@@ -1,12 +1,7 @@
-// ============================================================
-// natrix compress — client-side video compression via ffmpeg.wasm
-// Compresses videos to target size (MB) with bitrate estimation.
-// ============================================================
-
 const COMPRESS = (() => {
   let ffmpeg = null;
-  let currentFile = null; // { name, ext, blob, url, duration, width, height, size }
-  let targetSizeMB = 25; // default target size
+  let currentFile = null;
+  let targetSizeMB = 25;
   let resultBlob = null;
 
   const el = {
@@ -36,9 +31,6 @@ const COMPRESS = (() => {
     downloadBtn: document.getElementById('compress-download-btn'),
   };
 
-  // ---------------------------------------------------------
-  // drag & drop / picker wiring
-  // ---------------------------------------------------------
   el.dropzone.addEventListener('click', () => el.fileInput.click());
   el.fileInput.addEventListener('change', (e) => {
     if (e.target.files[0]) handleFile(e.target.files[0]);
@@ -62,7 +54,6 @@ const COMPRESS = (() => {
 
   el.resetBtn.addEventListener('click', resetToUpload);
 
-  // Wire presets
   el.sizeGrid.querySelectorAll('button[data-size]').forEach((btn) => {
     btn.addEventListener('click', () => {
       el.sizeGrid.querySelectorAll('button[data-size]').forEach((b) => b.classList.remove('active'));
@@ -88,9 +79,6 @@ const COMPRESS = (() => {
   el.optScale.addEventListener('change', updateBitrateEstimation);
   el.optAudio.addEventListener('change', updateBitrateEstimation);
 
-  // ---------------------------------------------------------
-  // file handling & metadata extraction
-  // ---------------------------------------------------------
   async function handleFile(file) {
     if (!file.type.startsWith('video/')) {
       setLoadStatus('Пожалуйста, выберите видеофайл.', true);
@@ -122,7 +110,6 @@ const COMPRESS = (() => {
       el.workspace.style.display = 'block';
       setLoadStatus('', false);
 
-      // Pre-warm ffmpeg
       window.natrixSharedFFmpeg.ensure().catch((err) => console.error('[compress] pre-warm failed:', err));
 
     } catch (err) {
@@ -188,21 +175,16 @@ const COMPRESS = (() => {
     setLoadStatus('', false);
   }
 
-  // ---------------------------------------------------------
-  // bitrate & scaling calculations
-  // ---------------------------------------------------------
   function updateBitrateEstimation() {
     if (!currentFile) return;
 
     const duration = currentFile.duration;
     if (!duration || duration <= 0) return;
 
-    // Use 93% of the target size as safety margin for muxing/container overhead
     const safetyMargin = 0.93;
     const targetSizeBits = targetSizeMB * 8 * 1024 * 1024 * safetyMargin;
 
-    // Estimate audio bitrate
-    let audioBitrateBps = 128 * 1000; // default for keep (fallback assumption)
+    let audioBitrateBps = 128 * 1000;
     const audioMode = el.optAudio.value;
     if (audioMode === 'mono64') {
       audioBitrateBps = 64 * 1000;
@@ -223,7 +205,6 @@ const COMPRESS = (() => {
     }
 
     if (videoBitrateBps <= 50 * 1000) {
-      // critical size warning
       el.bitrateInfo.innerHTML = `<span style="color: var(--danger); font-weight: bold;">Ошибка: Целевой размер слишком мал для видео такой длительности (${Math.round(duration)} сек). Битрейт видео получается отрицательным или слишком низким (${videoBitrateKbps} kbps). Пожалуйста, увеличьте целевой размер.</span>`;
       el.runBtn.disabled = true;
       return;
@@ -231,7 +212,6 @@ const COMPRESS = (() => {
 
     el.runBtn.disabled = false;
 
-    // Determine auto resolution
     let autoScaleText = '';
     let calculatedHeight = currentFile.height;
     let calculatedWidth = currentFile.width;
@@ -247,7 +227,6 @@ const COMPRESS = (() => {
         calculatedHeight = currentFile.height;
       }
       
-      // Keep aspect ratio
       const ratio = currentFile.width / currentFile.height;
       calculatedWidth = Math.round((calculatedHeight * ratio) / 2) * 2;
       autoScaleText = `(Рекомендуемое разрешение: <b>${calculatedWidth}x${calculatedHeight}</b>)`;
@@ -276,9 +255,6 @@ const COMPRESS = (() => {
     `;
   }
 
-  // ---------------------------------------------------------
-  // run compression
-  // ---------------------------------------------------------
   async function runCompression() {
     if (!currentFile) return;
 
@@ -291,7 +267,6 @@ const COMPRESS = (() => {
         setStatus(msg, isError);
       });
 
-      // Set progress listener
       window.natrixSharedFFmpeg.setProgressListener((progress) => {
         const pct = Math.min(100, Math.max(0, Math.round(progress * 100)));
         setProgress(pct);
@@ -308,8 +283,6 @@ const COMPRESS = (() => {
       console.log('[compress] running ffmpeg with args:', args.join(' '));
 
       setStatus('Сжатие видео (это может занять время)...', false);
-      // через общий exec — он подставляет -threads (без него x264 в wasm виснет)
-      // и сам бросает исключение на ненулевом коде возврата
       await window.natrixSharedFFmpeg.exec(args);
 
       setStatus('Чтение готового файла...', false);
@@ -321,7 +294,6 @@ const COMPRESS = (() => {
       resultBlob = new Blob([data], { type: 'video/mp4' });
       showResult(outputName);
 
-      // cleanup WASM files
       try { await ffmpeg.deleteFile(inputName); } catch (e) {}
       try { await ffmpeg.deleteFile(outputName); } catch (e) {}
 
@@ -333,7 +305,6 @@ const COMPRESS = (() => {
       setStatus('Ошибка при сжатии: ' + (err.message || err), true);
       setProgress(0);
 
-      // Auto-trigger confirmation for server fallback
       setTimeout(() => {
         if (confirm("Локальное сжатие в браузере не удалось (вероятно, кодек AV1 или HEVC не поддерживается вашим браузером/WASM).\n\nХотите загрузить видео на сервер для сжатия? (Сжатие выполнится на сервере с помощью native ffmpeg).")) {
           runServerCompression();
@@ -349,7 +320,6 @@ const COMPRESS = (() => {
     setProgress(0);
     setStatus('Загрузка видео на сервер для сжатия...', false);
 
-    // Calculate parameters (exactly matching the client calculation)
     const duration = currentFile.duration;
     const safetyMargin = 0.93;
     const targetSizeBits = targetSizeMB * 8 * 1024 * 1024 * safetyMargin;
@@ -378,7 +348,6 @@ const COMPRESS = (() => {
     } else {
       scaleHeight = parseInt(el.optScale.value);
     }
-    // Only scale down, never upscale
     if (scaleHeight && currentFile.height <= scaleHeight) {
       scaleHeight = 0;
     }
@@ -460,20 +429,17 @@ const COMPRESS = (() => {
 
     const totalTargetBitrateKbps = Math.round(targetSizeBits / duration / 1000);
     let videoBitrateKbps = totalTargetBitrateKbps - audioBitrateKbps;
-    if (videoBitrateKbps < 50) videoBitrateKbps = 50; // clamp to minimum video quality
+    if (videoBitrateKbps < 50) videoBitrateKbps = 50;
 
     const args = ['-i', inputName];
 
-    // Explicit stream mapping with optional audio to prevent crashes if video is muted
     args.push('-map', '0:v');
     if (audioMode !== 'mute') {
       args.push('-map', '0:a?');
     }
 
-    // Scale filter
     let scaleHeight = null;
     if (el.optScale.value === 'auto') {
-      // Auto downscaling based on bitrate
       if (videoBitrateKbps < 300) {
         scaleHeight = 360;
       } else if (videoBitrateKbps < 600) {
@@ -485,12 +451,10 @@ const COMPRESS = (() => {
       scaleHeight = parseInt(el.optScale.value);
     }
 
-    // Only scale down, never upscale
     if (scaleHeight && currentFile.height > scaleHeight) {
       args.push('-vf', `scale=-2:${scaleHeight}`);
     }
 
-    // Video codec, pixel format, and bitrate limiters
     args.push(
       '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p',
@@ -500,17 +464,14 @@ const COMPRESS = (() => {
       '-preset', el.optPreset.value
     );
 
-    // Audio options
     if (audioMode === 'mute') {
       args.push('-an');
     } else if (audioMode === 'mono64') {
       args.push('-c:a', 'aac', '-b:a', '64k', '-ac', '1');
     } else {
-      // transcode to 128k stereo
       args.push('-c:a', 'aac', '-b:a', '128k');
     }
 
-    // Output settings
     args.push('-y', outputName);
     return args;
   }
@@ -518,7 +479,6 @@ const COMPRESS = (() => {
   let resultUrl = null;
 
   function showResult(outputName) {
-    // предыдущий результат больше не нужен — иначе blob'ы копятся в памяти вкладки
     if (resultUrl) URL.revokeObjectURL(resultUrl);
     const url = URL.createObjectURL(resultBlob);
     resultUrl = url;
@@ -537,9 +497,6 @@ const COMPRESS = (() => {
     el.resultCard.style.display = 'block';
   }
 
-  // ---------------------------------------------------------
-  // UI helpers
-  // ---------------------------------------------------------
   function setStatus(msg, isError) {
     el.status.textContent = msg;
     el.status.className = 'status-line' + (isError ? ' error' : msg && !isError ? '' : '');

@@ -1,18 +1,3 @@
-// ============================================================
-// natrix dlp — thin client over the existing FastAPI backend.
-// Matches the real main.py contract exactly:
-//
-//   GET /api/formats?url=<url>&t=<token>
-//       -> { title, duration, thumbnail, formats: [{format_id, ext, label, has_video, has_audio, height}] }
-//
-//   GET /api/download?url=<url>&t=<token>&mode=quick|video|audio&format_id=<id?>
-//       -> streams the file (Content-Disposition attachment)
-//
-// The token (?t=...) must be present in the page URL, same as
-// the backend's own index() route requires it to serve index.html
-// at all. We just forward whatever is already in location.search.
-// ============================================================
-
 (function () {
   const ENDPOINTS = {
     formats: '/api/formats',
@@ -30,7 +15,6 @@
     fetchBtn: document.getElementById('dlp-fetch-btn'),
   };
 
-  // ui-level mode: 'quick' | 'advanced' (advanced lets you also pick audio-only)
   let mode = 'quick';
   let chosenFormatId = null;
   let chosenIsAudio = false;
@@ -45,7 +29,6 @@
     el.fetchBtn.disabled = busy;
   }
 
-  // ---- mode toggle (UI-level, quick vs advanced) ----
   el.modeToggle.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (window.natrixSFX) window.natrixSFX.playClick();
@@ -61,7 +44,6 @@
     });
   });
 
-  // ---- fetch formats (advanced mode) ----
   async function loadFormats(url) {
     setStatus('Получаю список форматов...', false);
     const qs = new URLSearchParams({ url });
@@ -120,7 +102,6 @@
     return d.innerHTML;
   }
 
-  // ---- download ----
   async function startDownload() {
     const url = el.url.value.trim();
     if (!url) {
@@ -128,7 +109,6 @@
       return;
     }
 
-    // advanced mode: first click loads formats, second click (after picking) downloads
     if (mode === 'advanced' && formatsLoadedForUrl !== url) {
       setBusy(true);
       el.progressWrap.classList.add('active');

@@ -41,7 +41,6 @@
                 radial-gradient(at 100% 100%, rgba(63, 185, 80, 0.03) 0px, transparent 50%);
         }
 
-        /* Header */
         header {
             display: flex;
             justify-content: space-between;
@@ -131,14 +130,12 @@
             box-shadow: 0 0 15px rgba(88, 166, 255, 0.4);
         }
 
-        /* Main Layout */
         .main-container {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
-        /* Left Panel - File Manager & Commit */
         .sidebar {
             width: 350px;
             border-right: 1px solid var(--border-color);
@@ -229,7 +226,6 @@
             accent-color: var(--accent);
         }
 
-        /* Commit Panel */
         .commit-panel {
             padding: 20px;
             background: var(--bg-secondary);
@@ -258,7 +254,6 @@
             border-color: var(--accent);
         }
 
-        /* Right Panel - Diff Viewer */
         .content-area {
             flex: 1;
             display: flex;
@@ -335,7 +330,6 @@
             opacity: 0.3;
         }
 
-        /* Commit History Overlay/Drawer */
         .history-panel {
             border-top: 1px solid var(--border-color);
             background: var(--bg-secondary);
@@ -415,7 +409,6 @@
             white-space: nowrap;
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -457,7 +450,6 @@
             </div>
 
             <div class="file-list-container" id="file-list">
-                <!-- File items dynamic -->
             </div>
 
             <div class="commit-panel">
@@ -490,7 +482,6 @@
     <div class="history-panel">
         <div class="history-header">Recent Commits</div>
         <div class="history-list" id="history-list">
-            <!-- Commits dynamic -->
         </div>
     </div>
 
@@ -543,7 +534,6 @@
                 const item = document.createElement('div');
                 item.className = `file-item ${selectedFile && selectedFile.path === file.path ? 'active' : ''}`;
                 
-                // Determine label
                 let statusLabel = file.status_code;
                 let statusClass = 'untracked';
                 if (file.staged) {
@@ -576,7 +566,6 @@
         async function selectFile(path, staged) {
             selectedFile = { path, staged };
             
-            // Highlight active in list
             document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
             const fileItems = Array.from(document.querySelectorAll('.file-name'));
             const match = fileItems.find(el => el.innerText === path);
@@ -586,7 +575,6 @@
 
             document.getElementById('active-file-title').innerText = path;
             
-            // Show discard action if not staged and not untracked
             const fileObj = currentStatus.files.find(f => f.path === path);
             const discardBtnContainer = document.getElementById('diff-actions-container');
             const discardBtn = document.getElementById('discard-btn');
@@ -598,7 +586,6 @@
                 discardBtnContainer.style.display = 'none';
             }
 
-            // Fetch diff
             const diffData = await fetchAPI(`/api/diff?path=${encodeURIComponent(path)}&staged=${staged}`);
             if (diffData) {
                 renderDiff(diffData.diff);
@@ -718,14 +705,12 @@
             });
         }
 
-        // Listen for Ctrl+Enter to commit
         document.getElementById('commit-msg-input').addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'Enter') {
                 commitChanges();
             }
         });
 
-        // Auto-refresh on load
         refreshData();
     </script>
 </body>

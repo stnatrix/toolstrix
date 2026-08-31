@@ -1,8 +1,3 @@
-"""
-yt-dlp web — личный сервис для скачивания видео/аудио с любых площадок.
-Лёгкий FastAPI backend, без хранения файлов на сервере (стримим клиенту напрямую).
-"""
-
 import os
 import re
 import secrets
@@ -21,23 +16,11 @@ TMP_DIR = Path(tempfile.gettempdir()) / "ytdlp-web"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR = Path(__file__).parent / "static"
 
-# максимальный размер загружаемого на сервер файла для /api/compress
 MAX_UPLOAD_BYTES = int(os.environ.get("YTDLP_MAX_UPLOAD_MB", "512")) * 1024 * 1024
 
 app = FastAPI(title="natrix tools")
 
 
-# ---------- Cross-origin isolation ----------
-# ffmpeg.wasm собран в multi-thread варианте (ffmpeg-core.worker.js) и требует
-# SharedArrayBuffer. SharedArrayBuffer доступен только на cross-origin isolated
-# странице, то есть при COOP: same-origin + COEP: require-corp. Без этих
-# заголовков natrix.mpeg и natrix.compress падают с
-# "SharedArrayBuffer is not defined" ещё на этапе загрузки ядра.
-#
-# Заголовки ставит само приложение, а не nginx — так проект остаётся рабочим
-# при любом способе развёртывания (напрямую uvicorn, через прокси, локально).
-# require-corp безопасен, потому что все ресурсы страницы (шрифты, ffmpeg)
-# самохостятся — внешних запросов у фронтенда нет.
 @app.middleware("http")
 async def cross_origin_isolation(request, call_next):
     response = await call_next(request)
@@ -45,25 +28,17 @@ async def cross_origin_isolation(request, call_next):
     response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
 
-    # Статика обязана ревалидироваться. Ответ, закэшированный браузером ДО того,
-    # как появились заголовки выше, под require-corp отдаётся как
-    # ERR_BLOCKED_BY_RESPONSE — и ffmpeg.wasm намертво отказывается стартовать,
-    # хотя сервер уже отвечает правильно. Воркер-чанк ffmpeg тянет сам себя по
-    # фиксированному URL, ?v= к нему не приделать, поэтому единственная надёжная
-    # страховка — no-cache (кэш остаётся, но каждый раз проверяется через ETag).
     if request.url.path.startswith("/static/"):
         response.headers.setdefault("Cache-Control", "no-cache")
     return response
 
 
-# ---------- Отдача фронтенда ----------
 @app.get("/", response_class=HTMLResponse)
 def index():
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
-# ---------- Получить список доступных форматов (для ПК-режима) ----------
 @app.get("/api/formats")
 def get_formats(url: str):
     ydl_opts = {
@@ -81,7 +56,6 @@ def get_formats(url: str):
 
     formats = []
     for f in info.get("formats", []):
-        # пропускаем форматы без видео и без аудио (например, storyboard-превью)
         if f.get("vcodec") == "none" and f.get("acodec") == "none":
             continue
         height = f.get("height")
@@ -108,7 +82,6 @@ def get_formats(url: str):
             "height": height or 0,
         })
 
-    # сортировка: сначала видео по убыванию качества, потом аудио
     formats.sort(key=lambda x: (-x["height"], not x["has_audio"]))
 
     return {
@@ -119,10 +92,9 @@ def get_formats(url: str):
     }
 
 
-# ---------- Скачивание ----------
 def _safe_filename(name: str) -> str:
     name = re.sub(r'[\\/*?:"<>|]', "_", name)
-    name = name.strip(" .")  # ".." и хвостовые точки/пробелы недопустимы как имя файла
+    name = name.strip(" .")
     return name[:150]
 
 
@@ -147,7 +119,6 @@ def _download(url: str, format_selector: str, audio_only: bool) -> Path:
             "preferredquality": "192",
         }]
     else:
-        # гарантируем итоговый mp4-контейнер, если видео+аудио отдельно
         ydl_opts["merge_output_format"] = "mp4"
 
     try:
@@ -157,8 +128,6 @@ def _download(url: str, format_selector: str, audio_only: bool) -> Path:
         shutil.rmtree(session_dir, ignore_errors=True)
         raise HTTPException(400, f"Ошибка скачивания: {e}")
 
-    # yt-dlp может оставить в папке служебные огрызки (.part, .ytdl, отдельные
-    # дорожки до merge) — берём самый большой готовый файл, а не первый попавшийся
     files = [
         f for f in session_dir.iterdir()
         if f.is_file() and f.suffix.lower() not in {".part", ".ytdl", ".temp"}
@@ -172,18 +141,16 @@ def _download(url: str, format_selector: str, audio_only: bool) -> Path:
 @app.get("/api/download")
 def download(
     url: str,
-    mode: str = Query(default="quick"),  # quick | video | audio
+    mode: str = Query(default="quick"),
     format_id: str | None = Query(default=None),
 ):
     if mode == "audio":
         format_selector = "bestaudio/best"
         audio_only = True
     elif mode == "video" and format_id:
-        # выбранный конкретный формат + лучшее аудио, либо сам формат если уже с аудио
         format_selector = f"{format_id}+bestaudio/{format_id}/best"
         audio_only = False
     else:
-        # quick-режим: среднее-хорошее качество, не самое тяжёлое
         format_selector = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best"
         audio_only = False
 
@@ -208,7 +175,6 @@ def download(
     return response
 
 
-# ---------- Серверное сжатие (fallback, когда ffmpeg.wasm в браузере не справился) ----------
 ALLOWED_PRESETS = {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow"}
 ALLOWED_AUDIO_MODES = {"keep", "mono64", "mute"}
 COMPRESS_TIMEOUT_SEC = int(os.environ.get("YTDLP_COMPRESS_TIMEOUT", "600"))
@@ -232,8 +198,6 @@ async def api_compress(
     if target_height and not 0 < target_height <= 4320:
         raise HTTPException(400, "target_height вне допустимого диапазона")
 
-    # имя приходит от клиента — нельзя подставлять его в путь как есть
-    # (".." или "/" увели бы запись за пределы session_dir)
     safe_name = _safe_filename(Path(file.filename or "upload").name) or "upload"
 
     session_dir = Path(tempfile.mkdtemp(dir=TMP_DIR))
@@ -241,7 +205,6 @@ async def api_compress(
     output_filepath = session_dir / f"compressed_{Path(safe_name).stem}.mp4"
 
     try:
-        # Save uploaded file, обрывая заведомо неподъёмные для VPS загрузки
         written = 0
         with open(input_filepath, "wb") as buffer:
             while chunk := await file.read(1024 * 1024):
@@ -252,7 +215,6 @@ async def api_compress(
                     )
                 buffer.write(chunk)
 
-        # Build command
         cmd = [
             "ffmpeg",
             "-i", str(input_filepath),
@@ -281,14 +243,10 @@ async def api_compress(
         else:
             cmd.extend(["-c:a", "aac", "-b:a", "128k"])
             
-        # -threads именно здесь, как выходная опция: перед -i он ограничил бы
-        # только декодер, а держать в узде надо энкодер — на VPS одно ядро и
-        # CPUQuota=70%, иначе x264 разведёт потоков по числу ядер хоста.
         cmd.extend(["-threads", "1", "-y", str(output_filepath)])
 
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=COMPRESS_TIMEOUT_SEC)
         if res.returncode != 0:
-            # в stderr ffmpeg пишет мегабайты лога — клиенту нужен только хвост
             raise HTTPException(500, f"FFmpeg failed: {res.stderr[-800:]}")
 
         if not output_filepath.exists() or output_filepath.stat().st_size == 0:
@@ -298,7 +256,6 @@ async def api_compress(
         shutil.rmtree(session_dir, ignore_errors=True)
         raise HTTPException(504, "FFmpeg conversion timed out")
     except HTTPException:
-        # осмысленный код/текст уже сформирован выше — не заворачиваем его в 500
         shutil.rmtree(session_dir, ignore_errors=True)
         raise
     except Exception as e:

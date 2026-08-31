@@ -1,13 +1,6 @@
-// ============================================================
-// natrix mpeg — client-side video/image editing via ffmpeg.wasm
-// Nothing is ever uploaded anywhere. Everything happens in-tab.
-// ============================================================
-
 const MPEG = (() => {
-
-
   let ffmpeg = null;
-  let currentFile = null;      // { name, ext, kind: 'video'|'image', blob, url }
+  let currentFile = null;
   let selectedTool = null;
   let resultBlob = null;
 
@@ -32,9 +25,6 @@ const MPEG = (() => {
     downloadBtn: document.getElementById('mpeg-download-btn'),
   };
 
-  // ---------------------------------------------------------
-  // ffmpeg loading (lazy — only when user opens mpeg & picks a file)
-  // ---------------------------------------------------------
   async function ensureFfmpeg() {
     ffmpeg = await window.natrixSharedFFmpeg.ensure((msg, isError) => {
       setStatus(msg, isError);
@@ -46,15 +36,10 @@ const MPEG = (() => {
     });
   }
 
-  // Конвертирует File/Blob в Uint8Array для ffmpeg.writeFile()
   async function _fetchFile(file) {
     return window.natrixSharedFFmpeg.fetchFile(file);
   }
 
-
-  // ---------------------------------------------------------
-  // file handling
-  // ---------------------------------------------------------
   function kindFromMime(type) {
     if (type.startsWith('video/')) return 'video';
     if (type.startsWith('image/')) return 'image';
@@ -90,7 +75,6 @@ const MPEG = (() => {
     el.uploadCard.style.display = 'none';
     el.workspace.style.display = 'block';
 
-    // pre-warm ffmpeg in background so the first "Apply" feels instant
     ensureFfmpeg().catch((e) => {
       console.error(e);
     });
@@ -124,9 +108,6 @@ const MPEG = (() => {
     setLoadStatus('', false);
   }
 
-  // ---------------------------------------------------------
-  // UI helpers
-  // ---------------------------------------------------------
   function setStatus(msg, isError) {
     el.status.textContent = msg;
     el.status.className = 'status-line' + (isError ? ' error' : msg && !isError ? '' : '');
@@ -148,9 +129,6 @@ const MPEG = (() => {
     el.resetBtn.disabled = busy;
   }
 
-  // ---------------------------------------------------------
-  // drag & drop / picker wiring
-  // ---------------------------------------------------------
   el.dropzone.addEventListener('click', () => el.fileInput.click());
   el.fileInput.addEventListener('change', (e) => {
     if (e.target.files[0]) handleFile(e.target.files[0]);
@@ -174,11 +152,6 @@ const MPEG = (() => {
 
   el.resetBtn.addEventListener('click', resetToUpload);
 
-  // ===========================================================
-  // TOOL REGISTRY
-  // Each tool defines: applicable kind, options UI, and a
-  // buildCommand(opts) -> { args: [...], outExt } function.
-  // ===========================================================
   const TOOLS = {
     trim: {
       label: 'Обрезка',
@@ -355,16 +328,12 @@ const MPEG = (() => {
           return ['-i', inputName, '-vf', 'fps=12,scale=480:-1:flags=lanczos', out];
         }
         if (fmt === 'webm') {
-          // libvpx-vp9 в этой сборке ffmpeg-core стабильно валится с
-          // "memory access out of bounds" — даже на 640x360 и с -threads 1.
-          // VP8 + Vorbis кодируется нормально, поэтому webm делаем через него.
           return ['-i', inputName, '-c:v', 'libvpx', '-crf', '30', '-b:v', '1M', '-c:a', 'libvorbis', out];
         }
         return ['-i', inputName, '-c:v', 'libx264', '-c:a', 'aac', out];
       },
     },
 
-    // ---- image tools ----
     imgResize: {
       label: 'Ресайз',
       desc: 'Изменить размер картинки',
@@ -492,7 +461,6 @@ const MPEG = (() => {
       btn.addEventListener('click', () => selectTool(key));
       el.toolGrid.appendChild(btn);
     });
-    // auto-select first tool
     if (applicable.length) selectTool(applicable[0][0]);
   }
 
@@ -507,9 +475,6 @@ const MPEG = (() => {
     el.resultCard.style.display = 'none';
   }
 
-  // ---------------------------------------------------------
-  // run selected tool
-  // ---------------------------------------------------------
   async function runSelectedTool() {
     if (!currentFile || !selectedTool) return;
     const tool = TOOLS[selectedTool];
@@ -530,7 +495,6 @@ const MPEG = (() => {
       if (ctx.actualOutputName) outputName = ctx.actualOutputName;
 
       setStatus('Обрабатываю...', false);
-      // через общий exec — он подставляет -threads и проверяет код возврата
       await window.natrixSharedFFmpeg.exec(args);
 
       const data = await ffmpeg.readFile(outputName);
@@ -542,7 +506,6 @@ const MPEG = (() => {
       resultBlob = new Blob([data], { type: mime });
       showResult(outputName, mime);
 
-      // cleanup wasm FS
       try { await ffmpeg.deleteFile(inputName); } catch (e) {}
       try { await ffmpeg.deleteFile(outputName); } catch (e) {}
 
@@ -557,8 +520,6 @@ const MPEG = (() => {
     }
   }
 
-  // Расширение != mime: 'video/mkv' и 'image/jpg' не существуют, и <video>/<img>
-  // с таким типом отказываются проигрывать результат.
   const MIME_BY_EXT = {
     mp4: 'video/mp4', mov: 'video/mp4', m4v: 'video/mp4',
     webm: 'video/webm', mkv: 'video/x-matroska', avi: 'video/x-msvideo',
@@ -574,7 +535,6 @@ const MPEG = (() => {
   let resultUrl = null;
 
   function showResult(outputName, mime) {
-    // предыдущий результат больше не нужен — иначе blob'ы копятся в памяти вкладки
     if (resultUrl) URL.revokeObjectURL(resultUrl);
     const url = URL.createObjectURL(resultBlob);
     resultUrl = url;

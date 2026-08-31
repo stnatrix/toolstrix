@@ -1,8 +1,3 @@
-// ==========================================================================
-// natrix — Grainient Landing & Workspace Controller
-// Manages smooth transitions, floating cards, deep linking & sound effects.
-// ==========================================================================
-
 (function () {
   const landingView = document.getElementById('landing-view');
   const workspaceOverlay = document.getElementById('workspace-overlay');
@@ -21,14 +16,12 @@
 
   let activeTool = null;
 
-  // --- Sound feedback wrapper helper ---
   function sfx(fn) {
     if (window.natrixSFX && typeof window.natrixSFX[fn] === 'function') {
       window.natrixSFX[fn]();
     }
   }
 
-  // --- Open a tool in the workspace modal ---
   function openTool(toolName, updateHash = true, playSound = true) {
     if (!sections[toolName]) return;
     if (playSound) {
@@ -43,19 +36,16 @@
     document.body.classList.add('workspace-open');
     workspaceOverlay.classList.add('active');
 
-    // Show selected tool section
     Object.entries(sections).forEach(([key, el]) => {
       if (el) el.classList.toggle('active', key === toolName);
     });
 
-    // Update active tab buttons
     if (workspaceTabs) {
       workspaceTabs.querySelectorAll('button[data-tab]').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.tab === toolName);
       });
     }
 
-    // Update top nav links
     document.querySelectorAll('.header-nav .nav-link').forEach((link) => {
       link.classList.toggle('active', link.dataset.open === toolName);
     });
@@ -65,7 +55,6 @@
     }
   }
 
-  // --- Close workspace and return to floating landing page ---
   function closeWorkspace(updateHash = true, playSound = true) {
     if (!activeTool) return;
     if (playSound) sfx('playClose');
@@ -83,14 +72,10 @@
     });
 
     if (updateHash) {
-      // Remove hash cleanly without full page refresh
       history.pushState(null, '', window.location.pathname);
     }
   }
 
-  // --- Attach Event Listeners ---
-
-  // 1. Floating card wrappers on landing
   document.querySelectorAll('.card-wrapper').forEach((wrapper) => {
     const tool = wrapper.dataset.tool;
     wrapper.addEventListener('click', () => openTool(tool));
@@ -103,7 +88,6 @@
     wrapper.addEventListener('mouseenter', () => sfx('playHover'));
   });
 
-  // 2. Interactive Cursor Ambient Glow (Smooth Lerp)
   const cursorGlow = document.getElementById('cursor-glow');
   if (cursorGlow) {
     let targetX = window.innerWidth / 2;
@@ -122,7 +106,6 @@
     }, { passive: true });
 
     function renderCursor() {
-      // Lerp smooth follow (0.12 factor)
       currentX += (targetX - currentX) * 0.12;
       currentY += (targetY - currentY) * 0.12;
       cursorGlow.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
@@ -131,12 +114,10 @@
     requestAnimationFrame(renderCursor);
   }
 
-  // 3. Back button inside workspace
   if (backBtn) {
     backBtn.addEventListener('click', () => closeWorkspace());
   }
 
-  // 3. Logo click -> go to landing
   if (logoHome) {
     logoHome.addEventListener('click', (e) => {
       e.preventDefault();
@@ -144,7 +125,6 @@
     });
   }
 
-  // 4. Header nav links
   document.querySelectorAll('.header-nav .nav-link').forEach((btn) => {
     btn.addEventListener('click', () => {
       const tool = btn.dataset.open;
@@ -153,7 +133,6 @@
     btn.addEventListener('mouseenter', () => sfx('playHover'));
   });
 
-  // 5. Workspace tab buttons
   if (workspaceTabs) {
     workspaceTabs.querySelectorAll('button[data-tab]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -163,14 +142,12 @@
     });
   }
 
-  // 6. Escape key to close
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && activeTool) {
       closeWorkspace();
     }
   });
 
-  // 7. Click outside workspace panel to close
   if (workspaceOverlay) {
     workspaceOverlay.addEventListener('click', (e) => {
       if (e.target === workspaceOverlay) {
@@ -179,7 +156,6 @@
     });
   }
 
-  // 8. SFX Toggle Button
   function updateSfxUI(muted) {
     if (!sfxToggle) return;
     const iconOn = sfxToggle.querySelector('.sfx-icon-on');
@@ -205,7 +181,6 @@
     }
   }
 
-  // 9. Add tactile audio feedback to all buttons and dropzones
   document.querySelectorAll('button, .size-btn, .mode-toggle button').forEach((btn) => {
     if (!btn.classList.contains('floating-card')) {
       btn.addEventListener('mouseenter', () => sfx('playHover'));
@@ -213,7 +188,6 @@
     }
   });
 
-  // 10. Deep linking / Hash change support
   function handleHash() {
     const rawHash = window.location.hash.replace(/^#/, '').toLowerCase();
     if (sections[rawHash]) {
@@ -226,6 +200,5 @@
   window.addEventListener('popstate', handleHash);
   window.addEventListener('hashchange', handleHash);
 
-  // Initial check on page load
   handleHash();
 })();

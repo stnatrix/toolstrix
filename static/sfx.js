@@ -1,9 +1,3 @@
-// ==========================================================================
-// natrix SFX — Zero-dependency, lightweight Web Audio API Sound Synthesizer
-// Generates deep, muffled, ultra-satisfying tactile sound effects purely in code.
-// No external assets, zero bandwidth, zero CORS issues.
-// ==========================================================================
-
 (function () {
   let ctx = null;
   let muted = localStorage.getItem('natrix_sfx_muted') === 'true';
@@ -21,7 +15,6 @@
     return ctx;
   }
 
-  // Ensure AudioContext starts on initial click/keydown
   function initOnGesture() {
     getAudioContext();
     window.removeEventListener('pointerdown', initOnGesture);
@@ -46,7 +39,6 @@
       return this.setMuted(!muted);
     },
 
-    // 1. Muffled, deep tactical click / thud
     playClick() {
       if (muted) return;
       const ac = getAudioContext();
@@ -57,17 +49,14 @@
       const gain = ac.createGain();
       const filter = ac.createBiquadFilter();
 
-      // Lowpass filter to create warm muffled quality
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(420, now);
       filter.frequency.exponentialRampToValueAtTime(80, now + 0.08);
 
-      // Pitch sweep
       osc.type = 'sine';
       osc.frequency.setValueAtTime(160, now);
       osc.frequency.exponentialRampToValueAtTime(45, now + 0.08);
 
-      // Gain envelope
       gain.gain.setValueAtTime(0.22, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
@@ -79,7 +68,6 @@
       osc.stop(now + 0.09);
     },
 
-    // 2. Soft micro-hover sound
     playHover() {
       if (muted) return;
       const ac = getAudioContext();
@@ -108,7 +96,6 @@
       osc.stop(now + 0.045);
     },
 
-    // 3. Deep resonant card expansion whoosh
     playOpen() {
       if (muted) return;
       const ac = getAudioContext();
@@ -150,7 +137,6 @@
       subOsc.stop(now + 0.31);
     },
 
-    // 4. Soft collapse / back sound
     playClose() {
       if (muted) return;
       const ac = getAudioContext();
@@ -180,14 +166,13 @@
       osc.stop(now + 0.21);
     },
 
-    // 5. Warm dual harmonic chime (success/complete)
     playSuccess() {
       if (muted) return;
       const ac = getAudioContext();
       if (!ac) return;
 
       const now = ac.currentTime;
-      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 major triad
+      const notes = [523.25, 659.25, 783.99];
 
       notes.forEach((freq, i) => {
         const osc = ac.createOscillator();

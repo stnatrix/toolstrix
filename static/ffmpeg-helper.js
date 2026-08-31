@@ -1,22 +1,11 @@
-// ============================================================
-// natrix shared ffmpeg loader
-// Manages a single loaded instance of ffmpeg.wasm across tabs.
-// ============================================================
-
 window.natrixSharedFFmpeg = (function () {
   let ffmpeg = null;
   let ffmpegReady = false;
   let _loadingPromise = null;
   let activeProgressListener = null;
 
-  // Ядро собрано в multi-thread варианте. Если не задать -threads явно, libx264
-  // просит потоков по числу ядер, в пуле pthread'ов их столько нет — и кодирование
-  // намертво встаёт после первого кадра (ffmpeg.exec никогда не резолвится).
-  // Любое явное небольшое значение снимает дедлок; ограничиваем сверху четырьмя.
   const THREADS = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
 
-  // Ядро ~32МБ + компиляция wasm: на медленном соединении минуты. Но висеть
-  // вечно нельзя — если воркер не поднялся, ffmpeg.load() не реджектится сам.
   const LOAD_TIMEOUT_MS = 180000;
 
   async function ensure(statusCallback) {
@@ -85,13 +74,6 @@ window.natrixSharedFFmpeg = (function () {
     ]);
   }
 
-  // Единая точка запуска ffmpeg: гарантирует, что ядро загружено и что -threads
-  // задан явно (иначе кодирование зависает — см. комментарий к THREADS).
-  //
-  // Важно: -threads вставляется ПЕРЕД именем выходного файла. Перед -i это
-  // входная опция, она ограничивает только декодер — энкодер продолжает
-  // запрашивать потоки по числу ядер и всё так же виснет. Проверено:
-  // "-i in -c:v libx264 -threads 2 out" -> код 0, "-threads 2 -i in ... out" -> дедлок.
   async function exec(args) {
     const ff = await ensure();
     let finalArgs = args;
@@ -103,9 +85,6 @@ window.natrixSharedFFmpeg = (function () {
     try {
       code = await ff.exec(finalArgs);
     } catch (e) {
-      // Падение внутри wasm (например "memory access out of bounds") убивает
-      // воркер насовсем: без сброса вкладка становится нерабочей до перезагрузки.
-      // Сбрасываем состояние, чтобы следующая операция подняла свежее ядро.
       reset();
       throw e;
     }
@@ -116,7 +95,7 @@ window.natrixSharedFFmpeg = (function () {
   }
 
   function reset() {
-    try { if (ffmpeg) ffmpeg.terminate(); } catch (e) { /* воркер уже мёртв */ }
+    try { if (ffmpeg) ffmpeg.terminate(); } catch (e) {}
     ffmpeg = null;
     ffmpegReady = false;
     _loadingPromise = null;

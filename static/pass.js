@@ -1,9 +1,4 @@
-// ============================================================
-// natrix.pass — password & passphrase generator logic
-// ============================================================
-
 (function () {
-  // Safe Storage Wrapper to prevent crash in Private Mode / Iframe restrictions
   const storage = {
     getItem(key) {
       try {
@@ -22,14 +17,6 @@
     }
   };
 
-  // Wordlists for Passphrases
-  //
-  // Размер словаря — это и есть стойкость фразы: log2(N) бит на слово.
-  // Английский словарь — EFF Long Wordlist (7776 слов, 12.9 бит/слово),
-  // подключается отдельным файлом wordlist-en.js.
-  // Русский транслит — короткий мнемонический список на 51 слово, это всего
-  // 5.7 бит/слово: 4 слова = 23 бита, что подбирается за секунды. Он оставлен
-  // как «красивый», а не стойкий вариант, и подписан в UI соответственно.
   const WORDLISTS = {
     en: Array.isArray(window.NATRIX_WORDLIST_EN) ? window.NATRIX_WORDLIST_EN : null,
     ru: [
@@ -41,7 +28,6 @@
     ]
   };
 
-  // DOM Elements
   const els = {
     display: document.getElementById('pass-display'),
     container: document.getElementById('pass-display-container'),
@@ -58,7 +44,6 @@
     passGroup: document.getElementById('pass-settings-group'),
     phraseGroup: document.getElementById('phrase-settings-group'),
     
-    // Pass settings
     lenSlider: document.getElementById('pass-len-slider'),
     lenVal: document.getElementById('pass-len-val'),
     chkUpper: document.getElementById('pass-chk-upper'),
@@ -67,19 +52,16 @@
     chkSyms: document.getElementById('pass-chk-syms'),
     chkAvoid: document.getElementById('pass-chk-avoid'),
 
-    // Phrase settings
     wordsSlider: document.getElementById('pass-words-slider'),
     wordsVal: document.getElementById('pass-words-val'),
     sepSelect: document.getElementById('pass-sep-select'),
     langSelect: document.getElementById('pass-lang-select'),
 
-    // Actions
     generateBtn: document.getElementById('pass-generate-btn'),
     clearBtn: document.getElementById('pass-clear-btn'),
     historyList: document.getElementById('pass-history-list')
   };
 
-  // Default State
   let currentMode = 'pass';
   let history = [];
   let settings = {
@@ -87,7 +69,6 @@
     phrase: { words: 4, sep: '-', lang: 'en' }
   };
 
-  // Initialize
   function init() {
     try {
       loadState();
@@ -99,7 +80,6 @@
     }
   }
 
-  // Load Settings and History
   function loadState() {
     const savedSettings = storage.getItem('natrix.pass.settings');
     if (savedSettings) {
@@ -108,7 +88,6 @@
         if (parsed && typeof parsed === 'object') {
           currentMode = parsed.currentMode || 'pass';
           if (parsed.settings && typeof parsed.settings === 'object') {
-            // Safely merge properties to avoid reading from undefined
             if (parsed.settings.pass && typeof parsed.settings.pass === 'object') {
               settings.pass = { ...settings.pass, ...parsed.settings.pass };
             }
@@ -122,7 +101,6 @@
       }
     }
 
-    // Sync values to DOM with safety checks
     try {
       if (els.lenSlider) {
         els.lenSlider.value = settings.pass.len || 16;
@@ -168,9 +146,7 @@
     storage.setItem('natrix.pass.history', JSON.stringify(history));
   }
 
-  // Setup Event Listeners
   function setupEvents() {
-    // Mode toggling
     if (els.modeToggle) {
       els.modeToggle.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -181,7 +157,6 @@
       });
     }
 
-    // Pass settings triggers
     if (els.lenSlider) {
       els.lenSlider.addEventListener('input', (e) => {
         els.lenVal.textContent = e.target.value;
@@ -206,7 +181,6 @@
       }
     });
 
-    // Phrase settings triggers
     if (els.wordsSlider) {
       els.wordsSlider.addEventListener('input', (e) => {
         els.wordsVal.textContent = e.target.value;
@@ -232,7 +206,6 @@
       });
     }
 
-    // Action buttons
     if (els.generateBtn) els.generateBtn.addEventListener('click', generate);
     if (els.container) els.container.addEventListener('click', copyCurrent);
     if (els.clearBtn) els.clearBtn.addEventListener('click', clearHistory);
@@ -259,7 +232,6 @@
     generate();
   }
 
-  // Cryptographically secure random helper (rejection sampling — no modulo bias)
   function getRandomInt(max) {
     if (max <= 0) return 0;
     const limit = Math.floor(0x100000000 / max) * max;
@@ -272,7 +244,6 @@
     return val % max;
   }
 
-  // Generate logic
   function generate() {
     let pwd = '';
     let entropy = 0;
@@ -282,7 +253,6 @@
       entropy = calculatePasswordEntropy(pwd);
     } else {
       pwd = generatePassphrase();
-      // Энтропия фразы = кол-во слов × log2(размер словаря)
       entropy = settings.phrase.words * Math.log2(activeWordlist().length);
     }
 
@@ -343,7 +313,6 @@
       arr.push(pool[getRandomInt(pool.length)]);
     }
 
-    // Shuffle
     for (let i = arr.length - 1; i > 0; i--) {
       const j = getRandomInt(i + 1);
       const temp = arr[i];
@@ -354,8 +323,6 @@
     return arr.join('');
   }
 
-  // Словарь может не подгрузиться (wordlist-en.js не отдался) — тогда честно
-  // откатываемся на короткий русский список, а не падаем с TypeError.
   function activeWordlist() {
     return WORDLISTS[settings.phrase.lang] || WORDLISTS.en || WORDLISTS.ru;
   }
@@ -372,7 +339,6 @@
     return words.join(sep);
   }
 
-  // Расчёт энтропии для паролей (по символьному пулу)
   function calculatePasswordEntropy(pwd) {
     if (!pwd) return 0;
     let poolSize = 0;
@@ -386,7 +352,7 @@
     if (upper) poolSize += 26;
     if (lower) poolSize += 26;
     if (nums) poolSize += 10;
-    if (syms) poolSize += 27; // !@#$%^&*()_+-=[]{}|;:,.<>? — 27 символов
+    if (syms) poolSize += 27;
 
     if (poolSize === 0) return 0;
     return pwd.length * Math.log2(poolSize);
@@ -436,7 +402,6 @@
     });
   }
 
-  // History management
   function addToHistory(pwd) {
     if (history.length > 0 && history[0] === pwd) return;
     history.unshift(pwd);
@@ -478,7 +443,6 @@
       actions.style.display = 'flex';
       actions.style.gap = '8px';
 
-      // Copy button
       const cp = document.createElement('button');
       cp.style.background = 'none';
       cp.style.border = 'none';
@@ -487,7 +451,6 @@
       cp.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
       cp.addEventListener('click', () => copyText(pwd));
 
-      // Delete button
       const del = document.createElement('button');
       del.style.background = 'none';
       del.style.border = 'none';
@@ -528,7 +491,6 @@
     navigator.clipboard.writeText(text).then(() => {
       showToast();
     }).catch(() => {
-      // Fallback
       const el = document.createElement('textarea');
       el.value = text;
       el.style.position = 'fixed';
@@ -554,7 +516,6 @@
     }, 1500);
   }
 
-  // Self-start on DOMContentLoaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

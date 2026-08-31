@@ -1,11 +1,3 @@
-// ============================================================
-// EFF Long Wordlist (7776 words) — https://www.eff.org/dice
-// Public list from the Electronic Frontier Foundation, bundled locally
-// so natrix.pass has no external dependencies.
-//
-// 7776 = 6^5 words => log2(7776) = 12.925 bits per word:
-//   4 words = 51.7 bits, 6 words = 77.6 bits, 8 words = 103.4 bits.
-// ============================================================
 window.NATRIX_WORDLIST_EN = [
   "abacus","abdomen","abdominal","abide","abiding","ability","ablaze","able","abnormal","abrasion","abrasive","abreast",
   "abridge","abroad","abruptly","absence","absentee","absently","absinthe","absolute","absolve","abstain","abstract","absurd",

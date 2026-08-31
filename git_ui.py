@@ -22,7 +22,6 @@ def run_git(args: list[str]) -> str:
         )
         return result.stdout
     except subprocess.CalledProcessError as e:
-        # If no commits yet, git log will fail. We handle it.
         raise HTTPException(status_code=500, detail=e.stderr or e.stdout or str(e))
 
 @app.get("/", response_class=HTMLResponse)
@@ -42,10 +41,9 @@ def get_status():
     files = []
     for line in status_output.splitlines():
         if len(line) >= 4:
-            x = line[0]  # index status
-            y = line[1]  # work tree status
+            x = line[0]
+            y = line[1]
             filepath = line[3:]
-            # Clean up quotes if any
             if filepath.startswith('"') and filepath.endswith('"'):
                 filepath = filepath[1:-1]
                 
@@ -56,7 +54,6 @@ def get_status():
                 "status_code": f"{x}{y}"
             })
     
-    # Get current branch
     try:
         branch = run_git(["branch", "--show-current"]).strip()
     except Exception:
@@ -132,7 +129,6 @@ def get_log():
                 })
         return {"commits": commits}
     except Exception:
-        # No commits yet or other error
         return {"commits": []}
 
 if __name__ == "__main__":
