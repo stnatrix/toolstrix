@@ -12,6 +12,38 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import yt_dlp
 
+# Fix for yt-dlp / curl_cffi upstream issue (#17604):
+# Deprioritize fictitious/unrealistic browser versions (Chrome >= 133 on macOS 26/15)
+# which cause TikTok/Akamai WAF to return 537b Site Maintenance error.
+try:
+    import itertools
+    from yt_dlp.networking.impersonate import ImpersonateTarget
+    import yt_dlp.networking._curlcffi as cffi_mod
+
+    for _v in ["133", "136", "142", "145", "146", "150"]:
+        for _os_name, _os_ver in [("macos", "26"), ("macos", "15")]:
+            cffi_mod._DEPRIORITIZED_TARGETS.add(ImpersonateTarget("chrome", _v, _os_name, _os_ver))
+    for _os_name, _os_ver in [("macos", "26")]:
+        cffi_mod._DEPRIORITIZED_TARGETS.add(ImpersonateTarget("firefox", "144", _os_name, _os_ver))
+        cffi_mod._DEPRIORITIZED_TARGETS.add(ImpersonateTarget("firefox", "147", _os_name, _os_ver))
+        cffi_mod._DEPRIORITIZED_TARGETS.add(ImpersonateTarget("safari", "26.0", _os_name, _os_ver))
+        cffi_mod._DEPRIORITIZED_TARGETS.add(ImpersonateTarget("safari", "26.0.1", _os_name, _os_ver))
+
+    _chain_items = list(itertools.chain.from_iterable(tgts.items() for tgts in cffi_mod.BROWSER_TARGETS.values()))
+    cffi_mod.CurlCFFIRH._SUPPORTED_IMPERSONATE_TARGET_MAP = {
+        target: name for name, target in dict(sorted(
+            _chain_items,
+            key=lambda x: (
+                x[1] not in cffi_mod._DEPRIORITIZED_TARGETS,
+                x[1].os not in ("ios", "android"),
+                ("tor", "edge", "firefox", "safari", "chrome").index(x[1].client),
+                yt_dlp.utils.version_tuple(x[1].version or "0"),
+                x[1].os,
+            ), reverse=True)).items()
+    }
+except Exception:
+    pass
+
 TMP_DIR = Path(tempfile.gettempdir()) / "ytdlp-web"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR = Path(__file__).parent / "static"
