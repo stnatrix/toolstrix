@@ -36,23 +36,30 @@ window.natrixSharedFFmpeg = (function () {
       });
 
       const BASE = '/static/ffmpeg';
+      let coreURL = null;
+      let wasmURL = null;
+      let workerURL = null;
       try {
         if (statusCallback) statusCallback('Загружаю ядро ffmpeg (1/3 — core.js)...', false);
-        const coreURL = await _toBlobURL(`${BASE}/ffmpeg-core.js`, 'text/javascript');
+        coreURL = await _toBlobURL(`${BASE}/ffmpeg-core.js`, 'text/javascript');
         if (statusCallback) statusCallback('Загружаю ядро ffmpeg (2/3 — core.wasm ~32МБ)...', false);
-        const wasmURL = await _toBlobURL(`${BASE}/ffmpeg-core.wasm`, 'application/wasm');
+        wasmURL = await _toBlobURL(`${BASE}/ffmpeg-core.wasm`, 'application/wasm');
         if (statusCallback) statusCallback('Загружаю ядро ffmpeg (3/3 — worker)...', false);
-        const workerURL = await _toBlobURL(`${BASE}/ffmpeg-core.worker.js`, 'text/javascript');
+        workerURL = await _toBlobURL(`${BASE}/ffmpeg-core.worker.js`, 'text/javascript');
 
         await withTimeout(
           ffmpeg.load({ coreURL, wasmURL, workerURL }),
           LOAD_TIMEOUT_MS,
           'ffmpeg не ответил за 3 минуты — воркер не запустился. Обнови страницу с очисткой кэша (Ctrl+F5).'
         );
+        try { if (wasmURL) URL.revokeObjectURL(wasmURL); } catch (err) {}
         ffmpegReady = true;
         if (statusCallback) statusCallback('', false);
         return ffmpeg;
       } catch (e) {
+        try { if (coreURL) URL.revokeObjectURL(coreURL); } catch (err) {}
+        try { if (wasmURL) URL.revokeObjectURL(wasmURL); } catch (err) {}
+        try { if (workerURL) URL.revokeObjectURL(workerURL); } catch (err) {}
         ffmpeg = null;
         ffmpegReady = false;
         if (statusCallback) statusCallback(`Ошибка загрузки ffmpeg: ${e.message || e}`, true);

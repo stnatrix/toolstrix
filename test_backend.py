@@ -89,6 +89,125 @@ def test_api_compress_validation():
     assert res.status_code == 400
     assert "video_bitrate_kbps" in res.json()["detail"]
 
+def test_api_compress_empty_file():
+    res = client.post(
+        "/api/compress",
+        data={
+            "video_bitrate_kbps": 1000,
+            "target_height": 720,
+            "audio_mode": "keep",
+            "preset": "medium",
+        },
+        files={"file": ("empty.mp4", b"", "video/mp4")}
+    )
+    assert res.status_code == 400
+    assert "пустой" in res.json()["detail"].lower()
+
+def test_api_compress_negative_target_size():
+    res = client.post(
+        "/api/compress",
+        data={
+            "video_bitrate_kbps": 1000,
+            "target_height": 720,
+            "audio_mode": "keep",
+            "preset": "medium",
+            "target_size_mb": -5,
+        },
+        files={"file": ("test.mp4", b"dummy video content", "video/mp4")}
+    )
+    assert res.status_code == 400
+    assert "target_size_mb" in res.json()["detail"]
+
+def test_url_scheme_validation():
+    res = client.get("/api/formats?url=file:///etc/passwd")
+    assert res.status_code == 400
+    assert "http" in res.json()["detail"]
+
+    res = client.get("/api/download?url=ftp://test.com/video.mp4")
+    assert res.status_code == 400
+    assert "http" in res.json()["detail"]
+
+def test_real_server_compress_with_ffprobe():
+    import subprocess
+    test_video = TMP_DIR / "sample_test_video.mp4"
+    gen_cmd = [
+        "ffmpeg", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=10",
+        "-f", "lavfi", "-i", "sine=frequency=1000:duration=1",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-y", str(test_video)
+    ]
+    subprocess.run(gen_cmd, capture_output=True, check=True)
+    
+    from main import _get_video_duration
+    duration = _get_video_duration(test_video)
+    assert duration is not None and duration > 0.5, f"Expected duration ~1.0s, got {duration}"
+
+    with open(test_video, "rb") as f:
+        res = client.post(
+            "/api/compress",
+            data={
+                "video_bitrate_kbps": 500,
+                "target_height": 240,
+                "audio_mode": "keep",
+                "preset": "ultrafast",
+                "target_size_mb": 1.0,
+            },
+            files={"file": ("sample.mp4", f, "video/mp4")}
+        )
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "video/mp4"
+    assert len(res.content) > 0
+
+    test_video.unlink(missing_ok=True)
+
+def test_cyrillic_filename_and_audio_only_error():
+    import subprocess
+    test_video = TMP_DIR / "sample_cyrillic_test.mp4"
+    gen_cmd = [
+        "ffmpeg", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=10",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-y", str(test_video)
+    ]
+    subprocess.run(gen_cmd, capture_output=True, check=True)
+
+    with open(test_video, "rb") as f:
+        res = client.post(
+            "/api/compress",
+            data={
+                "video_bitrate_kbps": 500,
+                "target_height": 240,
+                "audio_mode": "keep",
+                "preset": "ultrafast",
+            },
+            files={"file": ("привет_видео.mp4", f, "video/mp4")}
+        )
+    assert res.status_code == 200
+    disp = res.headers.get("content-disposition", "")
+    assert "filename=\"compressed.mp4\"" in disp
+    assert "filename*=UTF-8''" in disp
+    # Ensure header does not trigger UnicodeEncodeError when encoded to latin-1 / ascii
+    disp.encode("latin-1")
+    disp.encode("ascii")
+
+    # Test audio-only file upload is rejected with 400 Bad Request
+    test_audio = TMP_DIR / "sample_test_audio.mp3"
+    subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=1000:duration=1", str(test_audio)], check=True, capture_output=True)
+
+    with open(test_audio, "rb") as f:
+        res_audio = client.post(
+            "/api/compress",
+            data={
+                "video_bitrate_kbps": 500,
+                "target_height": 240,
+                "audio_mode": "keep",
+                "preset": "ultrafast",
+            },
+            files={"file": ("audio_only.mp3", f, "audio/mpeg")}
+        )
+    assert res_audio.status_code == 400
+    assert "видеопоток" in res_audio.json()["detail"].lower()
+
+    test_video.unlink(missing_ok=True)
+    test_audio.unlink(missing_ok=True)
+
 def test_api_formats_error():
     res = client.get("/api/formats?url=invalid-url-not-a-video")
     assert res.status_code == 400
@@ -99,5 +218,10 @@ if __name__ == "__main__":
     test_safe_filename()
     test_clean_stale_temp()
     test_api_compress_validation()
+    test_api_compress_empty_file()
+    test_api_compress_negative_target_size()
+    test_url_scheme_validation()
+    test_real_server_compress_with_ffprobe()
+    test_cyrillic_filename_and_audio_only_error()
     test_api_formats_error()
     print("All backend tests PASSED!")

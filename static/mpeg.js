@@ -44,15 +44,16 @@ const MPEG = (() => {
   const VIDEO_EXTS = new Set(['mp4', 'm4v', 'mov', 'webm', 'mkv', 'avi', 'wmv', 'flv', 'ts', '3gp', 'ogv']);
   const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg', 'avif', 'ico', 'tiff']);
 
-  function extFromName(name) {
+  function extFromName(name, defaultExt = null) {
     const m = (name || '').match(/\.([a-zA-Z0-9]+)$/);
-    return m ? m[1].toLowerCase() : 'bin';
+    if (m) return m[1].toLowerCase();
+    return defaultExt || 'bin';
   }
 
   function kindFromMimeOrExt(type, name) {
     if (type && type.startsWith('video/')) return 'video';
     if (type && type.startsWith('image/')) return 'image';
-    const ext = extFromName(name);
+    const ext = extFromName(name, null);
     if (VIDEO_EXTS.has(ext)) return 'video';
     if (IMAGE_EXTS.has(ext)) return 'image';
     return null;
@@ -61,14 +62,25 @@ const MPEG = (() => {
   function getMediaDimensions(file, kind, url) {
     return new Promise((resolve) => {
       let resolved = false;
+      let timer = null;
+      let v = null;
+      const cleanup = () => {
+        if (v) {
+          v.onloadedmetadata = null;
+          v.onerror = null;
+          v.ontimeupdate = null;
+          try { v.src = ''; } catch (e) {}
+        }
+      };
       const done = (data) => {
         if (!resolved) {
           resolved = true;
-          clearTimeout(timer);
+          if (timer) clearTimeout(timer);
+          cleanup();
           resolve(data);
         }
       };
-      const timer = setTimeout(() => done({ width: 0, height: 0, duration: 0 }), 3000);
+      timer = setTimeout(() => done({ width: 0, height: 0, duration: 0 }), 4000);
 
       if (kind === 'image') {
         const img = new Image();
@@ -76,11 +88,25 @@ const MPEG = (() => {
         img.onerror = () => done({ width: 0, height: 0, duration: 0 });
         img.src = url;
       } else {
-        const v = document.createElement('video');
+        v = document.createElement('video');
         v.preload = 'metadata';
         v.muted = true;
         v.playsInline = true;
         v.onloadedmetadata = () => {
+          if (v.duration === Infinity) {
+            const seekTimer = setTimeout(() => {
+              clearTimeout(seekTimer);
+              const dur = (isFinite(v.duration) && v.duration > 0) ? v.duration : ((isFinite(v.currentTime) && v.currentTime > 0) ? v.currentTime : 0);
+              done({ width: v.videoWidth || 0, height: v.videoHeight || 0, duration: dur });
+            }, 2000);
+            v.currentTime = 1e101;
+            v.ontimeupdate = () => {
+              clearTimeout(seekTimer);
+              const dur = (isFinite(v.duration) && v.duration > 0) ? v.duration : ((isFinite(v.currentTime) && v.currentTime > 0) ? v.currentTime : 0);
+              done({ width: v.videoWidth || 0, height: v.videoHeight || 0, duration: dur });
+            };
+            return;
+          }
           done({
             width: v.videoWidth || 0,
             height: v.videoHeight || 0,
@@ -106,9 +132,14 @@ const MPEG = (() => {
     const fileUrl = URL.createObjectURL(file);
     const meta = await getMediaDimensions(file, kind, fileUrl);
 
+    let ext = extFromName(file.name, null);
+    if (!ext || ext === 'bin') {
+      ext = kind === 'video' ? 'mp4' : 'png';
+    }
+
     currentFile = {
       name: file.name,
-      ext: extFromName(file.name),
+      ext,
       kind,
       blob: file,
       url: fileUrl,
@@ -164,6 +195,8 @@ const MPEG = (() => {
     currentFile = null;
     resultBlob = null;
     el.fileInput.value = '';
+    el.previewWrap.innerHTML = '';
+    el.resultPreview.innerHTML = '';
     el.uploadCard.style.display = 'block';
     el.workspace.style.display = 'none';
     el.resultCard.style.display = 'none';
@@ -238,10 +271,13 @@ const MPEG = (() => {
         </label>
       `;
       },
-      buildArgs: (inputName, outputName) => {
+      buildArgs: (inputName, outputName, ctx) => {
         const start = parseFloat(document.getElementById('opt-trim-start').value) || 0;
         const endRaw = document.getElementById('opt-trim-end').value;
         const exact = document.getElementById('opt-trim-exact').checked;
+        if (start < 0) {
+          throw new Error('Время начала не может быть отрицательным.');
+        }
         if (endRaw !== '' && parseFloat(endRaw) <= start) {
           throw new Error('Время окончания должно быть строго больше времени начала.');
         }
@@ -251,6 +287,9 @@ const MPEG = (() => {
           args.push('-t', dur);
         }
         if (exact) {
+          ctx.outExt = 'mp4';
+          const out = outputName.replace(/\.\w+$/, '.mp4');
+          ctx.actualOutputName = out;
           args.push(
             '-map', '0:v:0',
             '-map', '0:a?',
@@ -258,12 +297,12 @@ const MPEG = (() => {
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
             '-c:a', 'aac',
-            '-b:a', '128k'
+            '-b:a', '128k',
+            out
           );
         } else {
-          args.push('-c', 'copy', '-avoid_negative_ts', 'make_zero');
+          args.push('-c', 'copy', '-avoid_negative_ts', 'make_zero', outputName);
         }
-        args.push(outputName);
         return args;
       },
     },
@@ -278,15 +317,30 @@ const MPEG = (() => {
         <div class="hint">2.0 — вдвое громче, 0.5 — вдвое тише, 0 — полностью беззвучно.</div>
       `,
       buildArgs: (inputName, outputName) => {
-        const vol = document.getElementById('opt-vol').value || '1.0';
+        let vol = parseFloat(document.getElementById('opt-vol').value);
+        if (isNaN(vol) || vol < 0) vol = 1.0;
+        vol = Math.min(5, Math.max(0, vol));
+
+        if (vol === 0) {
+          return [
+            '-i', inputName,
+            '-map', '0:v:0',
+            '-an',
+            '-c:v', 'copy',
+            outputName
+          ];
+        }
+
+        const isWebm = currentFile && currentFile.ext === 'webm';
+        const aCodec = isWebm ? ['-c:a', 'libvorbis'] : ['-c:a', 'aac', '-b:a', '128k'];
+
         return [
           '-i', inputName,
           '-map', '0:v:0',
           '-map', '0:a?',
           '-c:v', 'copy',
           '-af', `volume=${vol}`,
-          '-c:a', 'aac',
-          '-b:a', '128k',
+          ...aCodec,
           outputName
         ];
       },
@@ -341,7 +395,10 @@ const MPEG = (() => {
         sel.addEventListener('change', renderExtra);
         renderExtra();
       },
-      buildArgs: (inputName, outputName) => {
+      buildArgs: (inputName, outputName, ctx) => {
+        ctx.outExt = 'mp4';
+        const out = outputName.replace(/\.\w+$/, '.mp4');
+        ctx.actualOutputName = out;
         const type = document.getElementById('opt-filter-type').value;
         let vf;
         switch (type) {
@@ -372,7 +429,7 @@ const MPEG = (() => {
           '-pix_fmt', 'yuv420p',
           '-c:a', 'aac',
           '-b:a', '128k',
-          outputName
+          out
         ];
       },
     },
@@ -392,8 +449,13 @@ const MPEG = (() => {
           <option value="slow">Медленно (меньше файл)</option>
         </select>
       `,
-      buildArgs: (inputName, outputName) => {
-        const crf = document.getElementById('opt-crf').value || '28';
+      buildArgs: (inputName, outputName, ctx) => {
+        ctx.outExt = 'mp4';
+        const out = outputName.replace(/\.\w+$/, '.mp4');
+        ctx.actualOutputName = out;
+        let crf = parseInt(document.getElementById('opt-crf').value);
+        if (isNaN(crf)) crf = 28;
+        crf = Math.min(51, Math.max(0, crf));
         const preset = document.getElementById('opt-preset').value || 'medium';
         return [
           '-i', inputName,
@@ -402,11 +464,11 @@ const MPEG = (() => {
           '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
           '-c:v', 'libx264',
           '-pix_fmt', 'yuv420p',
-          '-crf', crf,
+          '-crf', String(crf),
           '-preset', preset,
           '-c:a', 'aac',
           '-b:a', '128k',
-          outputName
+          out
         ];
       },
     },
@@ -475,9 +537,9 @@ const MPEG = (() => {
         const wVal = document.getElementById('opt-img-w').value.trim();
         const hVal = document.getElementById('opt-img-h').value.trim();
         let vf = 'null';
-        if (wVal || hVal) {
-          const w = wVal ? parseInt(wVal) : -1;
-          const h = hVal ? parseInt(hVal) : -1;
+        const w = (wVal && parseInt(wVal) > 0) ? parseInt(wVal) : -1;
+        const h = (hVal && parseInt(hVal) > 0) ? parseInt(hVal) : -1;
+        if (w > 0 || h > 0) {
           vf = `scale=${w}:${h}`;
         }
         return ['-i', inputName, '-vf', vf, outputName];
@@ -517,7 +579,8 @@ const MPEG = (() => {
         x = Math.max(0, Math.min(x, imgW - w));
         y = Math.max(0, Math.min(y, imgH - h));
 
-        return ['-i', inputName, '-vf', `crop=${w}:${h}:${x}:${y}`, outputName];
+        const vf = `crop=w='min(iw,${w})':h='min(ih,${h})':x='min(max(0,${x}),iw-out_w)':y='min(max(0,${y}),ih-out_h)'`;
+        return ['-i', inputName, '-vf', vf, outputName];
       },
     },
 
@@ -557,7 +620,12 @@ const MPEG = (() => {
           args.push('-pix_fmt', 'yuvj420p');
         }
         const qEl = document.getElementById('opt-img-q');
-        if (qEl) args.push('-q:v', qEl.value);
+        if (qEl && (fmt === 'jpg' || fmt === 'jpeg' || fmt === 'webp')) {
+          let q = parseInt(qEl.value);
+          if (isNaN(q)) q = 4;
+          q = Math.min(31, Math.max(1, q));
+          args.push('-q:v', String(q));
+        }
         args.push(out);
         return args;
       },
@@ -633,18 +701,19 @@ const MPEG = (() => {
     let inputName = '';
     let outputName = '';
     try {
-      setStatus('Готовлю ffmpeg...', false);
-      await ensureFfmpeg();
-
       inputName = 'input.' + currentFile.ext;
       outputName = 'output.' + currentFile.ext;
 
-      setStatus('Записываю файл в память...', false);
-      await ffmpeg.writeFile(inputName, await _fetchFile(currentFile.blob));
-
+      // Validate options and build arguments before allocating memory
       const ctx = {};
       const args = tool.buildArgs(inputName, outputName, ctx);
       if (ctx.actualOutputName) outputName = ctx.actualOutputName;
+
+      setStatus('Готовлю ffmpeg...', false);
+      await ensureFfmpeg();
+
+      setStatus('Записываю файл в память...', false);
+      await ffmpeg.writeFile(inputName, await _fetchFile(currentFile.blob));
 
       setStatus('Обрабатываю...', false);
       await window.natrixSharedFFmpeg.exec(args);
@@ -699,8 +768,10 @@ const MPEG = (() => {
       img.className = 'preview';
       el.resultPreview.appendChild(img);
     }
+    const stem = (currentFile.name || 'file').replace(/\.[a-zA-Z0-9]+$/, '') || 'media';
+    const targetExt = outputName.split('.').pop() || (mime.startsWith('video/') ? 'mp4' : 'png');
     el.downloadBtn.href = url;
-    el.downloadBtn.download = 'natrix_' + outputName;
+    el.downloadBtn.download = 'natrix_' + stem + '.' + targetExt;
     el.resultCard.style.display = 'block';
     el.resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }

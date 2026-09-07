@@ -81,7 +81,7 @@
     try {
       loadState();
       setupEvents();
-      generate();
+      generate(false);
       console.log("natrix.pass: Initialization completed successfully.");
     } catch (e) {
       console.error("natrix.pass: Critical error during initialization:", e);
@@ -98,6 +98,9 @@
           if (parsed.settings && typeof parsed.settings === 'object') {
             if (parsed.settings.pass && typeof parsed.settings.pass === 'object') {
               settings.pass = { ...settings.pass, ...parsed.settings.pass };
+              if (!settings.pass.upper && !settings.pass.lower && !settings.pass.nums && !settings.pass.syms) {
+                settings.pass.lower = true;
+              }
             }
             if (parsed.settings.phrase && typeof parsed.settings.phrase === 'object') {
               settings.phrase = { ...settings.phrase, ...parsed.settings.phrase };
@@ -127,7 +130,7 @@
       if (els.sepSelect) els.sepSelect.value = settings.phrase.sep || '-';
       if (els.langSelect) els.langSelect.value = settings.phrase.lang || 'en';
 
-      setMode(currentMode);
+      setMode(currentMode, false);
     } catch (e) {
       console.error("natrix.pass: Error syncing settings to DOM:", e);
     }
@@ -236,7 +239,7 @@
     if (els.clearBtn) els.clearBtn.addEventListener('click', clearHistory);
   }
 
-  function setMode(mode) {
+  function setMode(mode, recordHistory = false) {
     currentMode = mode;
     if (els.modeToggle) {
       els.modeToggle.querySelectorAll('button').forEach(btn => {
@@ -254,19 +257,23 @@
       }
     }
     saveSettings();
-    generate();
+    generate(recordHistory);
   }
 
   function getRandomInt(max) {
     if (max <= 0) return 0;
-    const limit = Math.floor(0x100000000 / max) * max;
-    let val;
-    do {
-      const arr = new Uint32Array(1);
-      window.crypto.getRandomValues(arr);
-      val = arr[0];
-    } while (val >= limit);
-    return val % max;
+    const cryptoObj = (typeof window !== 'undefined' && window.crypto) || (typeof crypto !== 'undefined' && crypto);
+    if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+      const limit = Math.floor(0x100000000 / max) * max;
+      let val;
+      do {
+        const arr = new Uint32Array(1);
+        cryptoObj.getRandomValues(arr);
+        val = arr[0];
+      } while (val >= limit);
+      return val % max;
+    }
+    return Math.floor(Math.random() * max);
   }
 
   function generate(recordHistory = true) {
@@ -302,8 +309,8 @@
   function generatePassword() {
     const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
     const upperSim = 'IO';
-    const lower = 'abcdefghijkmnopqrstuvwxyz';
-    const lowerSim = 'l';
+    const lower = 'abcdefghijkmnpqrstuvwxyz';
+    const lowerSim = 'lo';
     const nums = '23456789';
     const numsSim = '01';
     const syms = '!@#$%^&*()_+-=[]{}|;:,.<>?';
@@ -383,7 +390,7 @@
       else syms = true;
     }
     if (upper) poolSize += settings.pass.avoid ? 24 : 26;
-    if (lower) poolSize += settings.pass.avoid ? 25 : 26;
+    if (lower) poolSize += settings.pass.avoid ? 24 : 26;
     if (nums) poolSize += settings.pass.avoid ? 8 : 10;
     if (syms) poolSize += 26;
 
@@ -436,7 +443,10 @@
   }
 
   function addToHistory(pwd) {
-    if (!pwd || (history.length > 0 && history[0] === pwd)) return;
+    if (!pwd) return;
+    if (history.length > 0 && history[0] === pwd) return;
+    const existingIdx = history.indexOf(pwd);
+    if (existingIdx !== -1) history.splice(existingIdx, 1);
     history.unshift(pwd);
     if (history.length > 20) history.pop();
     saveHistory();
@@ -444,6 +454,10 @@
   }
 
   function renderHistory() {
+    if (els.clearBtn) {
+      els.clearBtn.style.opacity = history.length === 0 ? '0.3' : '1';
+      els.clearBtn.style.pointerEvents = history.length === 0 ? 'none' : 'auto';
+    }
     if (!els.historyList) return;
     if (history.length === 0) {
       els.historyList.innerHTML = `<div style="font-size: 12px; color: var(--text-dim); text-align: center; font-style: italic; padding: 8px 0;">История пуста</div>`;
@@ -477,6 +491,9 @@
       actions.style.gap = '8px';
 
       const cp = document.createElement('button');
+      cp.type = 'button';
+      cp.title = 'Копировать';
+      cp.setAttribute('aria-label', 'Копировать пароль');
       cp.style.background = 'none';
       cp.style.border = 'none';
       cp.style.color = 'var(--text-dim)';
@@ -485,6 +502,9 @@
       cp.addEventListener('click', () => copyText(pwd));
 
       const del = document.createElement('button');
+      del.type = 'button';
+      del.title = 'Удалить';
+      del.setAttribute('aria-label', 'Удалить из истории');
       del.style.background = 'none';
       del.style.border = 'none';
       del.style.color = 'var(--text-dim)';
@@ -505,6 +525,7 @@
   }
 
   function clearHistory() {
+    if (!history || history.length === 0) return;
     if (confirm('Очистить всю историю?')) {
       history = [];
       saveHistory();
@@ -516,6 +537,7 @@
     if (!els.display) return;
     const txt = els.display.textContent;
     if (txt === 'Выберите настройки' || txt === 'Нажмите «Сгенерировать»') return;
+    addToHistory(txt);
     copyText(txt);
   }
 

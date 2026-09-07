@@ -48,6 +48,9 @@ TMP_DIR = Path(tempfile.gettempdir()) / "ytdlp-web"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
+_last_clean_time = 0.0
+
+
 def _clean_stale_temp(max_age_sec: int = 7200):
     import time
     now = time.time()
@@ -65,6 +68,63 @@ def _clean_stale_temp(max_age_sec: int = 7200):
         pass
 
 
+def _maybe_clean_stale_temp(max_age_sec: int = 7200):
+    global _last_clean_time
+    import time
+    now = time.time()
+    if now - _last_clean_time < 3600:
+        return
+    _last_clean_time = now
+    _clean_stale_temp(max_age_sec)
+
+
+def _ascii_filename(filename: str, fallback_base: str = "download") -> str:
+    path = Path(filename)
+    raw_stem = path.stem
+    raw_ext = path.suffix
+    clean_stem = re.sub(r"[^a-zA-Z0-9_\-]", "", raw_stem).strip(" .-_")
+    clean_ext = re.sub(r"[^a-zA-Z0-9_.]", "", raw_ext).strip(" .")
+    if clean_ext and not clean_ext.startswith("."):
+        clean_ext = f".{clean_ext}"
+    if not clean_stem:
+        clean_stem = fallback_base
+    result = f"{clean_stem}{clean_ext}" if clean_ext else clean_stem
+    try:
+        result.encode("ascii")
+        return result
+    except UnicodeEncodeError:
+        return f"{fallback_base}.mp4"
+
+
+def _get_video_duration(filepath: Path) -> float | None:
+    try:
+        res = subprocess.run(
+            [
+                "ffprobe",
+                "-v", "error",
+                "-show_entries", "format=duration:stream=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                str(filepath),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            for line in res.stdout.strip().splitlines():
+                line = line.strip()
+                if line and line != "N/A":
+                    try:
+                        val = float(line)
+                        if val > 0:
+                            return val
+                    except ValueError:
+                        continue
+    except Exception:
+        pass
+    return None
+
+
 _clean_stale_temp()
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -75,6 +135,7 @@ app = FastAPI(title="natrix tools")
 
 @app.middleware("http")
 async def cross_origin_isolation(request, call_next):
+    _maybe_clean_stale_temp()
     response = await call_next(request)
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
     response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
@@ -93,6 +154,8 @@ def index():
 
 @app.get("/api/formats")
 def get_formats(url: str):
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(400, "Разрешены только ссылки http:// и https://")
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
@@ -196,11 +259,18 @@ def download(
     mode: str = Query(default="quick"),
     format_id: str | None = Query(default=None),
 ):
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(400, "Разрешены только ссылки http:// и https://")
+
     if mode == "audio":
         format_selector = "bestaudio/best"
         audio_only = True
     elif mode == "video" and format_id:
-        format_selector = f"{format_id}+bestaudio/{format_id}/best"
+        clean_format_id = re.sub(r"[^a-zA-Z0-9_\-]", "", format_id)
+        if clean_format_id:
+            format_selector = f"{clean_format_id}+bestaudio/{clean_format_id}/best"
+        else:
+            format_selector = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best"
         audio_only = False
     else:
         format_selector = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best"
@@ -219,7 +289,7 @@ def download(
         media_type="application/octet-stream",
         background=BackgroundTask(cleanup),
     )
-    ascii_fallback = filename.encode("ascii", "ignore").decode() or "download"
+    ascii_fallback = _ascii_filename(filename, "download")
     response.headers["Content-Disposition"] = (
         f'attachment; filename="{ascii_fallback}"; '
         f"filename*=UTF-8''{quote(filename)}"
@@ -239,6 +309,7 @@ async def api_compress(
     target_height: int = Form(...),
     audio_mode: str = Form(...),
     preset: str = Form(...),
+    target_size_mb: float | None = Form(None),
 ):
 
     if preset not in ALLOWED_PRESETS:
@@ -249,6 +320,8 @@ async def api_compress(
         raise HTTPException(400, "video_bitrate_kbps вне допустимого диапазона")
     if target_height and not 0 < target_height <= 4320:
         raise HTTPException(400, "target_height вне допустимого диапазона")
+    if target_size_mb is not None and target_size_mb <= 0:
+        raise HTTPException(400, "target_size_mb должен быть больше 0")
 
     safe_name = _safe_filename(Path(file.filename or "upload").name) or "upload"
 
@@ -267,6 +340,25 @@ async def api_compress(
                     )
                 buffer.write(chunk)
 
+        if written == 0:
+            raise HTTPException(400, "Загружен пустой файл")
+
+        if target_size_mb and target_size_mb > 0:
+            duration = _get_video_duration(input_filepath)
+            if duration and duration > 0:
+                audio_bps = 64_000 if audio_mode == "mono64" else (0 if audio_mode == "mute" else 128_000)
+                file_size_bytes = input_filepath.stat().st_size
+                orig_calc_kbps = max(50, int(((file_size_bytes * 8) / duration - audio_bps) / 1000))
+
+                target_bits = max(0.5, target_size_mb) * 8 * 1024 * 1024 * 0.93
+                calc_kbps = int((target_bits / duration - audio_bps) / 1000)
+                calc_kbps = max(50, min(50_000, calc_kbps))
+
+                if target_size_mb * 1024 * 1024 >= file_size_bytes:
+                    video_bitrate_kbps = min(calc_kbps, orig_calc_kbps)
+                else:
+                    video_bitrate_kbps = calc_kbps
+
         cmd = [
             "ffmpeg",
             "-i", str(input_filepath),
@@ -278,7 +370,7 @@ async def api_compress(
             cmd.extend(["-map", "0:a?"])
             
         if target_height > 0:
-            cmd.extend(["-vf", f"scale=-2:{target_height}"])
+            cmd.extend(["-vf", f"scale=-2:trunc(min(ih\\,{target_height})/2)*2"])
         else:
             cmd.extend(["-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2"])
             
@@ -298,10 +390,14 @@ async def api_compress(
         else:
             cmd.extend(["-c:a", "aac", "-b:a", "128k"])
             
-        cmd.extend(["-threads", "1", "-y", str(output_filepath)])
+        cpu_threads = str(min(4, os.cpu_count() or 2))
+        cmd.extend(["-threads", cpu_threads, "-y", str(output_filepath)])
 
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=COMPRESS_TIMEOUT_SEC)
         if res.returncode != 0:
+            err_low = res.stderr.lower()
+            if "matches no streams" in err_low or "invalid data found" in err_low or "does not contain any stream" in err_low:
+                raise HTTPException(400, "Файл не содержит допустимого видеопотока для сжатия")
             raise HTTPException(500, f"FFmpeg failed: {res.stderr[-800:]}")
 
         if not output_filepath.exists() or output_filepath.stat().st_size == 0:
@@ -317,7 +413,6 @@ async def api_compress(
         shutil.rmtree(session_dir, ignore_errors=True)
         raise HTTPException(500, f"Conversion error: {e}")
 
-
     def cleanup():
         shutil.rmtree(session_dir, ignore_errors=True)
         
@@ -330,7 +425,7 @@ async def api_compress(
     )
     
     filename = output_filepath.name
-    ascii_fallback = filename.encode("ascii", "ignore").decode() or "compressed"
+    ascii_fallback = _ascii_filename(filename, "compressed")
     response.headers["Content-Disposition"] = (
         f'attachment; filename="{ascii_fallback}"; '
         f"filename*=UTF-8''{quote(filename)}"

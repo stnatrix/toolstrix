@@ -155,9 +155,12 @@
       const disposition = resp.headers.get('Content-Disposition') || '';
       const starMatch = disposition.match(/filename\*=UTF-8''([^;]+)/);
       const plainMatch = disposition.match(/filename="?([^";]+)"?/);
-      const filename = starMatch
-        ? decodeURIComponent(starMatch[1])
-        : (plainMatch ? plainMatch[1] : 'download');
+      let filename = 'download';
+      if (starMatch) {
+        try { filename = decodeURIComponent(starMatch[1]); } catch (e) { filename = starMatch[1]; }
+      } else if (plainMatch) {
+        filename = plainMatch[1];
+      }
 
       const dlUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -166,7 +169,9 @@
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(dlUrl);
+      setTimeout(() => {
+        try { URL.revokeObjectURL(dlUrl); } catch (e) {}
+      }, 30000);
 
       setStatus('Готово: ' + filename, false);
       if (window.natrixSFX) window.natrixSFX.playSuccess();

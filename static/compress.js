@@ -25,6 +25,7 @@ const COMPRESS = (() => {
     progressBar: document.getElementById('compress-progress-bar'),
     status: document.getElementById('compress-status'),
     runBtn: document.getElementById('compress-run-btn'),
+    serverBtn: document.getElementById('compress-server-btn'),
     resetBtn: document.getElementById('compress-reset-btn'),
     resultCard: document.getElementById('compress-result-card'),
     resultPreview: document.getElementById('compress-result-preview'),
@@ -147,7 +148,15 @@ const COMPRESS = (() => {
       video.muted = true;
       video.playsInline = true;
 
+      const cleanup = () => {
+        video.onloadedmetadata = null;
+        video.onerror = null;
+        video.ontimeupdate = null;
+        try { video.src = ''; } catch (e) {}
+      };
+
       const timer = setTimeout(() => {
+        cleanup();
         resolve({
           duration: 0,
           width: 0,
@@ -160,37 +169,45 @@ const COMPRESS = (() => {
         clearTimeout(timer);
         if (video.duration === Infinity) {
           const seekTimer = setTimeout(() => {
-            video.ontimeupdate = null;
-            resolve({
-              duration: isFinite(video.duration) && video.duration > 0 ? video.duration : 0,
+            clearTimeout(seekTimer);
+            const dur = (isFinite(video.duration) && video.duration > 0) ? video.duration : ((isFinite(video.currentTime) && video.currentTime > 0) ? video.currentTime : 0);
+            const res = {
+              duration: dur,
               width: video.videoWidth || 0,
               height: video.videoHeight || 0,
               needsServer: false,
-            });
+            };
+            cleanup();
+            resolve(res);
           }, 2000);
           video.currentTime = 1e101;
           video.ontimeupdate = () => {
             clearTimeout(seekTimer);
-            video.ontimeupdate = null;
-            resolve({
-              duration: isFinite(video.duration) && video.duration > 0 ? video.duration : 0,
+            const dur = (isFinite(video.duration) && video.duration > 0) ? video.duration : ((isFinite(video.currentTime) && video.currentTime > 0) ? video.currentTime : 0);
+            const res = {
+              duration: dur,
               width: video.videoWidth || 0,
               height: video.videoHeight || 0,
               needsServer: false,
-            });
+            };
+            cleanup();
+            resolve(res);
           };
           return;
         }
-        resolve({
+        const res = {
           duration: isFinite(video.duration) && video.duration > 0 ? video.duration : 0,
           width: video.videoWidth || 0,
           height: video.videoHeight || 0,
           needsServer: false,
-        });
+        };
+        cleanup();
+        resolve(res);
       };
 
       video.onerror = () => {
         clearTimeout(timer);
+        cleanup();
         resolve({
           duration: 0,
           width: 0,
@@ -238,6 +255,8 @@ const COMPRESS = (() => {
     currentFile = null;
     resultBlob = null;
     el.fileInput.value = '';
+    el.previewWrap.innerHTML = '';
+    el.resultPreview.innerHTML = '';
     el.uploadCard.style.display = 'block';
     el.workspace.style.display = 'none';
     el.resultCard.style.display = 'none';
@@ -401,13 +420,14 @@ const COMPRESS = (() => {
   }
 
   async function runServerCompression() {
+    if (!currentFile) return;
     setBusy(true);
     setProgress(0);
     setStatus('Загрузка видео на сервер для сжатия...', false);
 
     let duration = currentFile.duration;
     if (!duration || duration <= 0 || !isFinite(duration)) {
-      duration = Math.max(10, Math.round((currentFile.size * 8) / (4000 * 1000)));
+      duration = Math.max(10, Math.round(((currentFile.size || 50 * 1024 * 1024) * 8) / (4000 * 1000)));
     }
 
     const targetMB = Math.max(0.5, targetSizeMB);
@@ -422,9 +442,16 @@ const COMPRESS = (() => {
       audioBitrateKbps = 0;
     }
 
-    const totalTargetBitrateKbps = Math.round(targetSizeBits / duration / 1000);
+    const originalSizeMB = (currentFile.size || 50 * 1024 * 1024) / (1024 * 1024);
+    let totalTargetBitrateKbps = Math.round(targetSizeBits / duration / 1000);
+    if (targetMB >= originalSizeMB) {
+      const origBitrateKbps = Math.round(((currentFile.size || 50 * 1024 * 1024) * 8) / duration / 1000);
+      totalTargetBitrateKbps = Math.min(totalTargetBitrateKbps, origBitrateKbps);
+    }
+
     let videoBitrateKbps = totalTargetBitrateKbps - audioBitrateKbps;
     if (videoBitrateKbps < 50) videoBitrateKbps = 50;
+    if (videoBitrateKbps > 50000) videoBitrateKbps = 50000;
 
     let scaleHeight = 0;
     if (el.optScale.value === 'auto') {
@@ -444,10 +471,11 @@ const COMPRESS = (() => {
 
     const formData = new FormData();
     formData.append('file', currentFile.blob, currentFile.name);
-    formData.append('video_bitrate_kbps', videoBitrateKbps);
+    formData.append('video_bitrate_kbps', Math.min(50000, videoBitrateKbps));
     formData.append('target_height', scaleHeight);
     formData.append('audio_mode', audioMode);
     formData.append('preset', el.optPreset.value);
+    formData.append('target_size_mb', targetMB);
 
     try {
       const xhr = new XMLHttpRequest();
@@ -527,9 +555,16 @@ const COMPRESS = (() => {
       audioBitrateKbps = 0;
     }
 
-    const totalTargetBitrateKbps = Math.round(targetSizeBits / duration / 1000);
+    const originalSizeMB = currentFile.size / (1024 * 1024);
+    let totalTargetBitrateKbps = Math.round(targetSizeBits / duration / 1000);
+    if (targetMB >= originalSizeMB) {
+      const origBitrateKbps = Math.round((currentFile.size * 8) / duration / 1000);
+      totalTargetBitrateKbps = Math.min(totalTargetBitrateKbps, origBitrateKbps);
+    }
+
     let videoBitrateKbps = totalTargetBitrateKbps - audioBitrateKbps;
     if (videoBitrateKbps < 50) videoBitrateKbps = 50;
+    if (videoBitrateKbps > 50000) videoBitrateKbps = 50000;
 
     const args = ['-i', inputName];
 
@@ -551,7 +586,7 @@ const COMPRESS = (() => {
       scaleHeight = parseInt(el.optScale.value);
     }
 
-    if (scaleHeight && currentFile.height && currentFile.height > scaleHeight) {
+    if (scaleHeight && (!currentFile.height || currentFile.height > scaleHeight)) {
       args.push('-vf', `scale=-2:${scaleHeight}`);
     } else {
       args.push('-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2');
@@ -592,9 +627,11 @@ const COMPRESS = (() => {
     const sizeMB = (resultBlob.size / (1024 * 1024)).toFixed(2);
     el.resultInfo.textContent = `Размер: ${sizeMB} МБ`;
 
+    const stem = (currentFile.name || 'video').replace(/\.[a-zA-Z0-9]+$/, '') || 'video';
     el.downloadBtn.href = url;
-    el.downloadBtn.download = 'compressed_' + currentFile.name.replace(/\.\w+$/, '.mp4');
+    el.downloadBtn.download = 'compressed_' + stem + '.mp4';
     el.resultCard.style.display = 'block';
+    el.resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function setStatus(msg, isError) {
@@ -618,15 +655,20 @@ const COMPRESS = (() => {
   
   function setBusy(busy) {
     el.runBtn.disabled = busy;
+    if (el.serverBtn) el.serverBtn.disabled = busy;
     el.resetBtn.disabled = busy;
     el.optScale.disabled = busy;
     el.optAudio.disabled = busy;
     el.optPreset.disabled = busy;
     el.sizeGrid.querySelectorAll('button').forEach((btn) => btn.disabled = busy);
     el.customSizeInput.disabled = busy;
+    if (!busy) {
+      updateBitrateEstimation();
+    }
   }
 
   el.runBtn.addEventListener('click', runCompression);
+  if (el.serverBtn) el.serverBtn.addEventListener('click', runServerCompression);
 
   return {
     handleFile,
