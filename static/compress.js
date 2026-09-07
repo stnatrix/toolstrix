@@ -3,6 +3,7 @@ const COMPRESS = (() => {
   let currentFile = null;
   let targetSizeMB = 25;
   let resultBlob = null;
+  let resultUrl = null;
 
   const el = {
     dropzone: document.getElementById('compress-dropzone'),
@@ -62,7 +63,7 @@ const COMPRESS = (() => {
       const sizeVal = btn.dataset.size;
       if (sizeVal === 'custom') {
         el.customSizeWrap.style.display = 'block';
-        targetSizeMB = parseFloat(el.customSizeInput.value) || 25;
+        targetSizeMB = Math.max(0.5, parseFloat(el.customSizeInput.value) || 25);
       } else {
         el.customSizeWrap.style.display = 'none';
         targetSizeMB = parseFloat(sizeVal);
@@ -72,15 +73,28 @@ const COMPRESS = (() => {
   });
 
   el.customSizeInput.addEventListener('input', () => {
-    targetSizeMB = parseFloat(el.customSizeInput.value) || 1;
+    targetSizeMB = Math.max(0.5, parseFloat(el.customSizeInput.value) || 1);
     updateBitrateEstimation();
   });
 
   el.optScale.addEventListener('change', updateBitrateEstimation);
   el.optAudio.addEventListener('change', updateBitrateEstimation);
 
+  const VIDEO_EXTS = new Set(['mp4', 'm4v', 'mov', 'webm', 'mkv', 'avi', 'wmv', 'flv', 'ts', '3gp', 'ogv']);
+
+  function extFromName(name) {
+    const m = (name || '').match(/\.([a-zA-Z0-9]+)$/);
+    return m ? m[1].toLowerCase() : 'mp4';
+  }
+
+  function isVideoFile(file) {
+    if (file.type && file.type.startsWith('video/')) return true;
+    const ext = extFromName(file.name);
+    return VIDEO_EXTS.has(ext);
+  }
+
   async function handleFile(file) {
-    if (!file.type.startsWith('video/')) {
+    if (!isVideoFile(file)) {
       setLoadStatus('Пожалуйста, выберите видеофайл.', true);
       return;
     }
@@ -88,16 +102,22 @@ const COMPRESS = (() => {
     setLoadStatus('Чтение метаданных видео...', false);
     
     try {
-      const meta = await getVideoMetadata(file);
+      if (currentFile && currentFile.url) URL.revokeObjectURL(currentFile.url);
+      if (resultUrl) { URL.revokeObjectURL(resultUrl); resultUrl = null; }
+
+      const fileUrl = URL.createObjectURL(file);
+      const meta = await getVideoMetadata(file, fileUrl);
+
       currentFile = {
         name: file.name,
         ext: extFromName(file.name),
         blob: file,
-        url: URL.createObjectURL(file),
+        url: fileUrl,
         duration: meta.duration,
         width: meta.width,
         height: meta.height,
-        size: file.size
+        size: file.size,
+        needsServer: meta.needsServer,
       };
 
       resultBlob = null;
@@ -110,7 +130,9 @@ const COMPRESS = (() => {
       el.workspace.style.display = 'block';
       setLoadStatus('', false);
 
-      window.natrixSharedFFmpeg.ensure().catch((err) => console.error('[compress] pre-warm failed:', err));
+      if (!meta.needsServer) {
+        window.natrixSharedFFmpeg.ensure().catch((err) => console.error('[compress] pre-warm failed:', err));
+      }
 
     } catch (err) {
       console.error(err);
@@ -118,54 +140,101 @@ const COMPRESS = (() => {
     }
   }
 
-  function getVideoMetadata(file) {
-    return new Promise((resolve, reject) => {
+  function getVideoMetadata(file, fileURL) {
+    return new Promise((resolve) => {
       const video = document.createElement('video');
       video.preload = 'metadata';
       video.muted = true;
       video.playsInline = true;
-      
-      const fileURL = URL.createObjectURL(file);
-      video.src = fileURL;
+
+      const timer = setTimeout(() => {
+        resolve({
+          duration: 0,
+          width: 0,
+          height: 0,
+          needsServer: true,
+        });
+      }, 5000);
 
       video.onloadedmetadata = () => {
-        URL.revokeObjectURL(fileURL);
+        clearTimeout(timer);
+        if (video.duration === Infinity) {
+          const seekTimer = setTimeout(() => {
+            video.ontimeupdate = null;
+            resolve({
+              duration: isFinite(video.duration) && video.duration > 0 ? video.duration : 0,
+              width: video.videoWidth || 0,
+              height: video.videoHeight || 0,
+              needsServer: false,
+            });
+          }, 2000);
+          video.currentTime = 1e101;
+          video.ontimeupdate = () => {
+            clearTimeout(seekTimer);
+            video.ontimeupdate = null;
+            resolve({
+              duration: isFinite(video.duration) && video.duration > 0 ? video.duration : 0,
+              width: video.videoWidth || 0,
+              height: video.videoHeight || 0,
+              needsServer: false,
+            });
+          };
+          return;
+        }
         resolve({
-          duration: video.duration,
-          width: video.videoWidth,
-          height: video.videoHeight
+          duration: isFinite(video.duration) && video.duration > 0 ? video.duration : 0,
+          width: video.videoWidth || 0,
+          height: video.videoHeight || 0,
+          needsServer: false,
         });
       };
 
       video.onerror = () => {
-        URL.revokeObjectURL(fileURL);
-        reject(new Error('Невозможно декодировать заголовки видео. Возможно, файл поврежден или кодек не поддерживается вашим браузером.'));
+        clearTimeout(timer);
+        resolve({
+          duration: 0,
+          width: 0,
+          height: 0,
+          needsServer: true,
+        });
       };
-    });
-  }
 
-  function extFromName(name) {
-    const m = name.match(/\.([a-zA-Z0-9]+)$/);
-    return m ? m[1].toLowerCase() : 'mp4';
+      video.src = fileURL;
+    });
   }
 
   function renderPreview() {
     el.previewWrap.innerHTML = '';
-    const v = document.createElement('video');
-    v.src = currentFile.url;
-    v.controls = true;
-    el.previewWrap.appendChild(v);
+    if (!currentFile.needsServer) {
+      const v = document.createElement('video');
+      v.src = currentFile.url;
+      v.controls = true;
+      el.previewWrap.appendChild(v);
+    } else {
+      const notice = document.createElement('div');
+      notice.className = 'hint';
+      notice.style.padding = '24px 16px';
+      notice.style.textAlign = 'center';
+      notice.innerHTML = 'Превью недоступно в браузере (кодек MKV/HEVC/AV1).<br>Видео будет быстро сжато через серверный ffmpeg.';
+      el.previewWrap.appendChild(notice);
+    }
 
     const sizeMB = (currentFile.size / (1024 * 1024)).toFixed(2);
-    const durMin = Math.floor(currentFile.duration / 60);
-    const durSec = Math.round(currentFile.duration % 60);
-    const durStr = `${durMin}:${durSec < 10 ? '0' : ''}${durSec}`;
-    
-    el.fileInfo.textContent = `${currentFile.name} · ${sizeMB} МБ · ${currentFile.width}x${currentFile.height} · ${durStr}`;
+    const parts = [currentFile.name, `${sizeMB} МБ`];
+    if (currentFile.width && currentFile.height) {
+      parts.push(`${currentFile.width}x${currentFile.height}`);
+    }
+    if (currentFile.duration > 0) {
+      const durMin = Math.floor(currentFile.duration / 60);
+      const durSec = Math.round(currentFile.duration % 60);
+      parts.push(`${durMin}:${durSec < 10 ? '0' : ''}${durSec}`);
+    }
+    el.fileInfo.textContent = parts.join(' · ');
   }
 
   function resetToUpload() {
-    if (currentFile) URL.revokeObjectURL(currentFile.url);
+    if (currentFile && currentFile.url) URL.revokeObjectURL(currentFile.url);
+    if (resultUrl) { URL.revokeObjectURL(resultUrl); resultUrl = null; }
     currentFile = null;
     resultBlob = null;
     el.fileInput.value = '';
@@ -178,11 +247,18 @@ const COMPRESS = (() => {
   function updateBitrateEstimation() {
     if (!currentFile) return;
 
-    const duration = currentFile.duration;
-    if (!duration || duration <= 0) return;
+    if (currentFile.needsServer || !currentFile.duration || currentFile.duration <= 0 || !isFinite(currentFile.duration)) {
+      el.bitrateInfo.innerHTML = `<span style="color: var(--compress)">Кодек или длительность не определены в браузере. Видео будет обработано через серверный движок с автоподбором битрейта.</span>`;
+      el.runBtn.disabled = false;
+      el.runBtn.textContent = 'Сжать видео на сервере';
+      return;
+    }
 
+    el.runBtn.textContent = 'Сжать видео';
+    const duration = currentFile.duration;
     const safetyMargin = 0.93;
-    const targetSizeBits = targetSizeMB * 8 * 1024 * 1024 * safetyMargin;
+    const targetMB = Math.max(0.5, targetSizeMB);
+    const targetSizeBits = targetMB * 8 * 1024 * 1024 * safetyMargin;
 
     let audioBitrateBps = 128 * 1000;
     const audioMode = el.optAudio.value;
@@ -198,8 +274,8 @@ const COMPRESS = (() => {
 
     const originalSizeMB = currentFile.size / (1024 * 1024);
 
-    if (targetSizeMB >= originalSizeMB) {
-      el.bitrateInfo.innerHTML = `<span style="color: var(--ok)">Целевой размер (${targetSizeMB} МБ) больше или равен оригинальному (${originalSizeMB.toFixed(1)} МБ). Видео просто скопируется или слегка оптимизируется.</span>`;
+    if (targetMB >= originalSizeMB) {
+      el.bitrateInfo.innerHTML = `<span style="color: var(--ok)">Целевой размер (${targetMB} МБ) больше или равен оригинальному (${originalSizeMB.toFixed(1)} МБ). Видео просто скопируется или слегка оптимизируется.</span>`;
       el.runBtn.disabled = false;
       return;
     }
@@ -213,27 +289,31 @@ const COMPRESS = (() => {
     el.runBtn.disabled = false;
 
     let autoScaleText = '';
-    let calculatedHeight = currentFile.height;
-    let calculatedWidth = currentFile.width;
+    let calculatedHeight = currentFile.height || 1080;
+    let calculatedWidth = currentFile.width || 1920;
 
     if (el.optScale.value === 'auto') {
       if (videoBitrateKbps < 300) {
-        calculatedHeight = Math.min(360, currentFile.height);
+        calculatedHeight = Math.min(360, currentFile.height || 360);
       } else if (videoBitrateKbps < 600) {
-        calculatedHeight = Math.min(480, currentFile.height);
+        calculatedHeight = Math.min(480, currentFile.height || 480);
       } else if (videoBitrateKbps < 1200) {
-        calculatedHeight = Math.min(720, currentFile.height);
+        calculatedHeight = Math.min(720, currentFile.height || 720);
       } else {
-        calculatedHeight = currentFile.height;
+        calculatedHeight = currentFile.height || 1080;
       }
       
-      const ratio = currentFile.width / currentFile.height;
-      calculatedWidth = Math.round((calculatedHeight * ratio) / 2) * 2;
-      autoScaleText = `(Рекомендуемое разрешение: <b>${calculatedWidth}x${calculatedHeight}</b>)`;
+      if (currentFile.width && currentFile.height) {
+        const ratio = currentFile.width / currentFile.height;
+        calculatedWidth = Math.round((calculatedHeight * ratio) / 2) * 2;
+        autoScaleText = `(Рекомендуемое разрешение: <b>${calculatedWidth}x${calculatedHeight}</b>)`;
+      }
     } else {
       calculatedHeight = parseInt(el.optScale.value);
-      const ratio = currentFile.width / currentFile.height;
-      calculatedWidth = Math.round((calculatedHeight * ratio) / 2) * 2;
+      if (currentFile.width && currentFile.height) {
+        const ratio = currentFile.width / currentFile.height;
+        calculatedWidth = Math.round((calculatedHeight * ratio) / 2) * 2;
+      }
     }
 
     let warningStyle = '';
@@ -258,9 +338,15 @@ const COMPRESS = (() => {
   async function runCompression() {
     if (!currentFile) return;
 
+    if (currentFile.needsServer || !currentFile.duration || currentFile.duration <= 0) {
+      return await runServerCompression();
+    }
+
     setBusy(true);
     setProgress(0);
 
+    let inputName = '';
+    let outputName = '';
     try {
       setStatus('Подключение ffmpeg...', false);
       ffmpeg = await window.natrixSharedFFmpeg.ensure((msg, isError) => {
@@ -272,8 +358,8 @@ const COMPRESS = (() => {
         setProgress(pct);
       });
 
-      const inputName = 'input.' + currentFile.ext;
-      const outputName = 'output.mp4';
+      inputName = 'input.' + currentFile.ext;
+      outputName = 'output.mp4';
 
       setStatus('Загрузка видеофайла в память...', false);
       await ffmpeg.writeFile(inputName, await window.natrixSharedFFmpeg.fetchFile(currentFile.blob));
@@ -294,9 +380,6 @@ const COMPRESS = (() => {
       resultBlob = new Blob([data], { type: 'video/mp4' });
       showResult(outputName);
 
-      try { await ffmpeg.deleteFile(inputName); } catch (e) {}
-      try { await ffmpeg.deleteFile(outputName); } catch (e) {}
-
       setStatus('Видео успешно сжато!', false);
       setProgress(0);
 
@@ -311,6 +394,8 @@ const COMPRESS = (() => {
         }
       }, 100);
     } finally {
+      if (inputName) await window.natrixSharedFFmpeg.deleteFile(inputName);
+      if (outputName) await window.natrixSharedFFmpeg.deleteFile(outputName);
       setBusy(false);
     }
   }
@@ -320,9 +405,14 @@ const COMPRESS = (() => {
     setProgress(0);
     setStatus('Загрузка видео на сервер для сжатия...', false);
 
-    const duration = currentFile.duration;
+    let duration = currentFile.duration;
+    if (!duration || duration <= 0 || !isFinite(duration)) {
+      duration = Math.max(10, Math.round((currentFile.size * 8) / (4000 * 1000)));
+    }
+
+    const targetMB = Math.max(0.5, targetSizeMB);
     const safetyMargin = 0.93;
-    const targetSizeBits = targetSizeMB * 8 * 1024 * 1024 * safetyMargin;
+    const targetSizeBits = targetMB * 8 * 1024 * 1024 * safetyMargin;
 
     let audioBitrateKbps = 128;
     const audioMode = el.optAudio.value;
@@ -346,9 +436,9 @@ const COMPRESS = (() => {
         scaleHeight = 720;
       }
     } else {
-      scaleHeight = parseInt(el.optScale.value);
+      scaleHeight = parseInt(el.optScale.value) || 0;
     }
-    if (scaleHeight && currentFile.height <= scaleHeight) {
+    if (scaleHeight && currentFile.height && currentFile.height <= scaleHeight) {
       scaleHeight = 0;
     }
 
@@ -367,8 +457,17 @@ const COMPRESS = (() => {
         if (e.lengthComputable) {
           const pct = Math.round((e.loaded / e.total) * 100);
           setProgress(pct);
-          setStatus(`Загрузка на сервер: ${pct}%...`, false);
+          if (pct < 100) {
+            setStatus(`Загрузка на сервер: ${pct}%...`, false);
+          } else {
+            setStatus('Файл загружен. Сервер выполняет сжатие (подождите)...', false);
+          }
         }
+      };
+
+      xhr.upload.onload = () => {
+        setProgress(100);
+        setStatus('Файл загружен. Сервер выполняет сжатие (подождите)...', false);
       };
 
       xhr.onload = async () => {
@@ -417,7 +516,8 @@ const COMPRESS = (() => {
   function buildFfmpegArgs(inputName, outputName) {
     const duration = currentFile.duration;
     const safetyMargin = 0.93;
-    const targetSizeBits = targetSizeMB * 8 * 1024 * 1024 * safetyMargin;
+    const targetMB = Math.max(0.5, targetSizeMB);
+    const targetSizeBits = targetMB * 8 * 1024 * 1024 * safetyMargin;
 
     let audioBitrateKbps = 128;
     const audioMode = el.optAudio.value;
@@ -433,7 +533,7 @@ const COMPRESS = (() => {
 
     const args = ['-i', inputName];
 
-    args.push('-map', '0:v');
+    args.push('-map', '0:v:0', '-sn');
     if (audioMode !== 'mute') {
       args.push('-map', '0:a?');
     }
@@ -451,8 +551,10 @@ const COMPRESS = (() => {
       scaleHeight = parseInt(el.optScale.value);
     }
 
-    if (scaleHeight && currentFile.height > scaleHeight) {
+    if (scaleHeight && currentFile.height && currentFile.height > scaleHeight) {
       args.push('-vf', `scale=-2:${scaleHeight}`);
+    } else {
+      args.push('-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2');
     }
 
     args.push(
@@ -475,8 +577,6 @@ const COMPRESS = (() => {
     args.push('-y', outputName);
     return args;
   }
-
-  let resultUrl = null;
 
   function showResult(outputName) {
     if (resultUrl) URL.revokeObjectURL(resultUrl);

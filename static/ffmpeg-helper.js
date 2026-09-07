@@ -8,6 +8,8 @@ window.natrixSharedFFmpeg = (function () {
 
   const LOAD_TIMEOUT_MS = 180000;
 
+  const recentLogs = [];
+
   async function ensure(statusCallback) {
     if (ffmpegReady) return ffmpeg;
     if (_loadingPromise) {
@@ -25,7 +27,13 @@ window.natrixSharedFFmpeg = (function () {
         }
       });
 
-      ffmpeg.on('log', ({ message }) => console.log('[ffmpeg-shared]', message));
+      ffmpeg.on('log', ({ message }) => {
+        console.log('[ffmpeg-shared]', message);
+        if (typeof message === 'string') {
+          recentLogs.push(message);
+          if (recentLogs.length > 30) recentLogs.shift();
+        }
+      });
 
       const BASE = '/static/ffmpeg';
       try {
@@ -76,6 +84,7 @@ window.natrixSharedFFmpeg = (function () {
 
   async function exec(args) {
     const ff = await ensure();
+    recentLogs.length = 0;
     let finalArgs = args;
     if (!args.includes('-threads')) {
       finalArgs = [...args];
@@ -89,7 +98,12 @@ window.natrixSharedFFmpeg = (function () {
       throw e;
     }
     if (code !== 0) {
-      throw new Error(`ffmpeg завершился с кодом ${code}. Подробности — в консоли браузера.`);
+      const errorDetail = recentLogs
+        .filter(l => /error|invalid|failed|not divisible|cannot|unsupported/i.test(l))
+        .slice(-2)
+        .join('; ');
+      const detailMsg = errorDetail ? `: ${errorDetail}` : '. Подробности — в консоли браузера.';
+      throw new Error(`ffmpeg завершился с кодом ${code}${detailMsg}`);
     }
     return code;
   }
@@ -99,6 +113,14 @@ window.natrixSharedFFmpeg = (function () {
     ffmpeg = null;
     ffmpegReady = false;
     _loadingPromise = null;
+    recentLogs.length = 0;
+  }
+
+  async function deleteFile(name) {
+    if (!ffmpeg || !ffmpegReady) return;
+    try {
+      await ffmpeg.deleteFile(name);
+    } catch (e) {}
   }
 
   function setProgressListener(callback) {
@@ -122,6 +144,7 @@ window.natrixSharedFFmpeg = (function () {
     ensure,
     exec,
     reset,
+    deleteFile,
     threads: THREADS,
     isReady: () => ffmpegReady,
     getFFmpeg: () => ffmpeg,

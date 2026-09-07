@@ -46,6 +46,26 @@ except Exception:
 
 TMP_DIR = Path(tempfile.gettempdir()) / "ytdlp-web"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _clean_stale_temp(max_age_sec: int = 7200):
+    import time
+    now = time.time()
+    try:
+        for item in TMP_DIR.iterdir():
+            try:
+                if now - item.stat().st_mtime > max_age_sec:
+                    if item.is_dir():
+                        shutil.rmtree(item, ignore_errors=True)
+                    else:
+                        item.unlink(missing_ok=True)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+_clean_stale_temp()
 STATIC_DIR = Path(__file__).parent / "static"
 
 MAX_UPLOAD_BYTES = int(os.environ.get("YTDLP_MAX_UPLOAD_MB", "512")) * 1024 * 1024
@@ -127,7 +147,7 @@ def get_formats(url: str):
 def _safe_filename(name: str) -> str:
     name = re.sub(r'[\\/*?:"<>|]', "_", name)
     name = name.strip(" .")
-    return name[:150]
+    return (name or "media")[:150]
 
 
 def _download(url: str, format_selector: str, audio_only: bool) -> Path:
@@ -250,7 +270,8 @@ async def api_compress(
         cmd = [
             "ffmpeg",
             "-i", str(input_filepath),
-            "-map", "0:v"
+            "-map", "0:v:0",
+            "-sn"
         ]
 
         if audio_mode != "mute":
@@ -258,6 +279,8 @@ async def api_compress(
             
         if target_height > 0:
             cmd.extend(["-vf", f"scale=-2:{target_height}"])
+        else:
+            cmd.extend(["-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2"])
             
         cmd.extend([
             "-c:v", "libx264",

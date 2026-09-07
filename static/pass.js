@@ -18,7 +18,6 @@
   };
 
   const WORDLISTS = {
-    en: Array.isArray(window.NATRIX_WORDLIST_EN) ? window.NATRIX_WORDLIST_EN : null,
     ru: [
       "uyut", "lofi", "chay", "kofe", "dozhd", "veter", "osen", "zakat", "rassvet", "mechta", 
       "son", "kniga", "pled", "svecha", "ten", "noch", "zvezda", "luna", "tishina", "les", 
@@ -27,6 +26,15 @@
       "noski", "kover", "dusha", "mysl", "okean", "oblako", "tuman", "sneg", "zima", "vesna", "leto"
     ]
   };
+
+  function activeWordlist() {
+    if (settings.phrase.lang === 'en') {
+      if (Array.isArray(window.NATRIX_WORDLIST_EN) && window.NATRIX_WORDLIST_EN.length > 0) {
+        return window.NATRIX_WORDLIST_EN;
+      }
+    }
+    return WORDLISTS[settings.phrase.lang] || WORDLISTS.ru;
+  }
 
   const els = {
     display: document.getElementById('pass-display'),
@@ -129,7 +137,7 @@
       try {
         const parsedHistory = JSON.parse(savedHistory);
         if (Array.isArray(parsedHistory)) {
-          history = parsedHistory;
+          history = parsedHistory.filter(item => typeof item === 'string' && item.length > 0);
           renderHistory();
         }
       } catch (e) {
@@ -162,31 +170,48 @@
         els.lenVal.textContent = e.target.value;
         settings.pass.len = parseInt(e.target.value);
         saveSettings();
-        generate();
+        generate(false);
+      });
+      els.lenSlider.addEventListener('change', () => {
+        generate(true);
       });
     }
 
-    const checkBoxes = [els.chkUpper, els.chkLower, els.chkNums, els.chkSyms, els.chkAvoid];
-    checkBoxes.forEach(chk => {
+    const typeBoxes = [els.chkUpper, els.chkLower, els.chkNums, els.chkSyms];
+    typeBoxes.forEach(chk => {
       if (chk) {
-        chk.addEventListener('change', () => {
+        chk.addEventListener('change', (e) => {
+          const checkedCount = typeBoxes.filter(c => c && c.checked).length;
+          if (checkedCount === 0) {
+            e.target.checked = true;
+          }
           settings.pass.upper = !!els.chkUpper.checked;
           settings.pass.lower = !!els.chkLower.checked;
           settings.pass.nums = !!els.chkNums.checked;
           settings.pass.syms = !!els.chkSyms.checked;
-          settings.pass.avoid = !!els.chkAvoid.checked;
           saveSettings();
-          generate();
+          generate(true);
         });
       }
     });
+
+    if (els.chkAvoid) {
+      els.chkAvoid.addEventListener('change', () => {
+        settings.pass.avoid = !!els.chkAvoid.checked;
+        saveSettings();
+        generate(true);
+      });
+    }
 
     if (els.wordsSlider) {
       els.wordsSlider.addEventListener('input', (e) => {
         els.wordsVal.textContent = e.target.value;
         settings.phrase.words = parseInt(e.target.value);
         saveSettings();
-        generate();
+        generate(false);
+      });
+      els.wordsSlider.addEventListener('change', () => {
+        generate(true);
       });
     }
 
@@ -194,7 +219,7 @@
       els.sepSelect.addEventListener('change', (e) => {
         settings.phrase.sep = e.target.value;
         saveSettings();
-        generate();
+        generate(true);
       });
     }
 
@@ -202,11 +227,11 @@
       els.langSelect.addEventListener('change', (e) => {
         settings.phrase.lang = e.target.value;
         saveSettings();
-        generate();
+        generate(true);
       });
     }
 
-    if (els.generateBtn) els.generateBtn.addEventListener('click', generate);
+    if (els.generateBtn) els.generateBtn.addEventListener('click', () => generate(true));
     if (els.container) els.container.addEventListener('click', copyCurrent);
     if (els.clearBtn) els.clearBtn.addEventListener('click', clearHistory);
   }
@@ -244,7 +269,7 @@
     return val % max;
   }
 
-  function generate() {
+  function generate(recordHistory = true) {
     let pwd = '';
     let entropy = 0;
 
@@ -253,7 +278,8 @@
       entropy = calculatePasswordEntropy(pwd);
     } else {
       pwd = generatePassphrase();
-      entropy = settings.phrase.words * Math.log2(activeWordlist().length);
+      const list = activeWordlist();
+      entropy = (list && list.length > 0) ? settings.phrase.words * Math.log2(list.length) : 0;
     }
 
     if (!els.display) return;
@@ -268,7 +294,9 @@
     els.display.textContent = pwd;
     els.display.style.color = 'var(--text)';
     updateStrength(entropy);
-    addToHistory(pwd);
+    if (recordHistory) {
+      addToHistory(pwd);
+    }
   }
 
   function generatePassword() {
@@ -323,18 +351,23 @@
     return arr.join('');
   }
 
-  function activeWordlist() {
-    return WORDLISTS[settings.phrase.lang] || WORDLISTS.en || WORDLISTS.ru;
-  }
-
   function generatePassphrase() {
     const list = activeWordlist();
-    const count = settings.phrase.words;
-    const sep = settings.phrase.sep;
+    if (!list || list.length === 0) return '';
+    const count = Math.max(1, settings.phrase.words);
+    const sep = settings.phrase.sep !== undefined ? settings.phrase.sep : '-';
     
     let words = [];
+    let lastWord = '';
     for (let i = 0; i < count; i++) {
-      words.push(list[getRandomInt(list.length)]);
+      let word;
+      let attempts = 0;
+      do {
+        word = list[getRandomInt(list.length)];
+        attempts++;
+      } while (word === lastWord && list.length > 1 && attempts < 10);
+      words.push(word);
+      lastWord = word;
     }
     return words.join(sep);
   }
@@ -349,13 +382,13 @@
       else if (/[0-9]/.test(char)) nums = true;
       else syms = true;
     }
-    if (upper) poolSize += 26;
-    if (lower) poolSize += 26;
-    if (nums) poolSize += 10;
-    if (syms) poolSize += 27;
+    if (upper) poolSize += settings.pass.avoid ? 24 : 26;
+    if (lower) poolSize += settings.pass.avoid ? 25 : 26;
+    if (nums) poolSize += settings.pass.avoid ? 8 : 10;
+    if (syms) poolSize += 26;
 
     if (poolSize === 0) return 0;
-    return pwd.length * Math.log2(poolSize);
+    return Math.max(0, pwd.length * Math.log2(poolSize));
   }
 
   function updateStrength(entropy) {
@@ -403,7 +436,7 @@
   }
 
   function addToHistory(pwd) {
-    if (history.length > 0 && history[0] === pwd) return;
+    if (!pwd || (history.length > 0 && history[0] === pwd)) return;
     history.unshift(pwd);
     if (history.length > 20) history.pop();
     saveHistory();
@@ -488,22 +521,31 @@
 
   let toastTimeout;
   function copyText(text) {
-    navigator.clipboard.writeText(text).then(() => {
-      showToast();
-    }).catch(() => {
-      const el = document.createElement('textarea');
-      el.value = text;
-      el.style.position = 'fixed';
-      document.body.appendChild(el);
-      el.select();
-      try {
-        document.execCommand('copy');
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).then(() => {
         showToast();
-      } catch (err) {
-        console.error(err);
-      }
-      document.body.removeChild(el);
-    });
+      }).catch(() => {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.select();
+    try {
+      document.execCommand('copy');
+      showToast();
+    } catch (err) {
+      console.error('Clipboard fallback copy error:', err);
+    }
+    document.body.removeChild(el);
   }
 
   function showToast() {
