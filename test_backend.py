@@ -208,6 +208,49 @@ def test_cyrillic_filename_and_audio_only_error():
     test_video.unlink(missing_ok=True)
     test_audio.unlink(missing_ok=True)
 
+def test_api_formats_deduplication():
+    from unittest.mock import patch, MagicMock
+
+    mock_info = {
+        "title": "Test Video",
+        "duration": 60,
+        "thumbnail": "https://example.com/thumb.jpg",
+        "formats": [
+            # Storyboards
+            {"format_id": "sb0", "vcodec": "none", "acodec": "none", "height": 180},
+            # 2160p duplicates
+            {"format_id": "625", "ext": "mp4", "vcodec": "vp09", "acodec": "none", "height": 2160, "filesize": None},
+            {"format_id": "313", "ext": "webm", "vcodec": "vp9", "acodec": "none", "height": 2160, "filesize": 350000000},
+            {"format_id": "401", "ext": "mp4", "vcodec": "av01", "acodec": "none", "height": 2160, "filesize": 240000000},
+            # 1440p duplicates
+            {"format_id": "620", "ext": "mp4", "vcodec": "vp09", "acodec": "none", "height": 1440, "filesize": None},
+            {"format_id": "271", "ext": "webm", "vcodec": "vp9", "acodec": "none", "height": 1440, "filesize": 150000000},
+            # 1080p duplicates
+            {"format_id": "270", "ext": "mp4", "vcodec": "avc1", "acodec": "none", "height": 1080, "filesize": None},
+            {"format_id": "137", "ext": "mp4", "vcodec": "avc1", "acodec": "none", "height": 1080, "filesize": 80000000},
+            {"format_id": "248", "ext": "webm", "vcodec": "vp9", "acodec": "none", "height": 1080, "filesize": 30000000},
+            # Audio-only
+            {"format_id": "140", "ext": "m4a", "vcodec": "none", "acodec": "mp4a", "height": None, "filesize": 3000000},
+        ],
+    }
+
+    mock_ydl = MagicMock()
+    mock_ydl.__enter__.return_value.extract_info.return_value = mock_info
+
+    with patch("yt_dlp.YoutubeDL", return_value=mock_ydl):
+        res = client.get("/api/formats?url=https://youtube.com/watch?v=123")
+        assert res.status_code == 200
+        data = res.json()
+        formats = data["formats"]
+
+        heights = [f["height"] for f in formats]
+        assert len(heights) == len(set(heights)), f"Duplicate heights found: {heights}"
+        assert heights == [2160, 1440, 1080]
+
+        fmt_1080 = next(f for f in formats if f["height"] == 1080)
+        assert fmt_1080["format_id"] == "137"
+        assert "76.3MB" in fmt_1080["label"]
+
 def test_api_formats_error():
     res = client.get("/api/formats?url=invalid-url-not-a-video")
     assert res.status_code == 400
@@ -224,4 +267,5 @@ if __name__ == "__main__":
     test_real_server_compress_with_ffprobe()
     test_cyrillic_filename_and_audio_only_error()
     test_api_formats_error()
+    test_api_formats_deduplication()
     print("All backend tests PASSED!")

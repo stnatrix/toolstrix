@@ -428,4 +428,33 @@ assert.strictEqual(testHistory.length, 2);
 assert.strictEqual(testHistory[0], 'pwd1');
 console.log("✓ pass: history deduplication and ordering verified");
 
+// Test DLP format deduplication logic
+function deduplicateFormats(rawFormats) {
+  const seenOptions = new Set();
+  const formats = [];
+  for (const f of rawFormats) {
+    const optionLabel = `${f.label || f.format_id}${f.ext ? ' · ' + f.ext : ''}`.trim();
+    if (!seenOptions.has(optionLabel)) {
+      seenOptions.add(optionLabel);
+      formats.push(f);
+    }
+  }
+  return formats;
+}
+
+const mockDuplicates = [
+  { format_id: '625', label: '2160p · 15MB', ext: 'mp4' },
+  { format_id: '313', label: '2160p · 15MB', ext: 'mp4' },
+  { format_id: '620', label: '1440p · 10MB', ext: 'mp4' },
+  { format_id: '271', label: '1440p · 10MB', ext: 'mp4' },
+  { format_id: '270', label: '1080p · 5MB', ext: 'mp4' },
+  { format_id: '137', label: '1080p · 5MB', ext: 'mp4' }
+];
+const deduped = deduplicateFormats(mockDuplicates);
+assert.strictEqual(deduped.length, 3, "Duplicates in DLP format list must be filtered out");
+assert.strictEqual(deduped[0].label, '2160p · 15MB');
+assert.strictEqual(deduped[1].label, '1440p · 10MB');
+assert.strictEqual(deduped[2].label, '1080p · 5MB');
+console.log("✓ dlp: format dropdown deduplication verified");
+
 console.log("ALL FRONTEND TESTS PASSED!");

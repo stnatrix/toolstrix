@@ -58,11 +58,22 @@
   }
 
   function renderFormats(data) {
-    const formats = data.formats || [];
-    if (!formats.length) {
+    const rawFormats = data.formats || [];
+    if (!rawFormats.length) {
       el.formatsBox.innerHTML = '<div class="status-line error">Форматы не найдены.</div>';
       el.formatsBox.style.display = 'block';
       return;
+    }
+
+    // Deduplicate in UI to guarantee no duplicate option labels appear
+    const seenOptions = new Set();
+    const formats = [];
+    for (const f of rawFormats) {
+      const optionLabel = `${f.label || f.format_id}${f.ext ? ' · ' + f.ext : ''}`.trim();
+      if (!seenOptions.has(optionLabel)) {
+        seenOptions.add(optionLabel);
+        formats.push(f);
+      }
     }
 
     const durationStr = data.duration

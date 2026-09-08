@@ -152,6 +152,16 @@ def index():
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
+def _format_score(f: dict) -> tuple:
+    ext_score = 2 if f.get("ext") == "mp4" else (1 if f.get("ext") == "webm" else 0)
+    has_size = 1 if (f.get("filesize") or f.get("filesize_approx")) else 0
+    vcodec = (f.get("vcodec") or "").lower()
+    codec_score = 2 if vcodec.startswith(("avc1", "h264")) else (1 if vcodec.startswith(("vp9", "vp09", "av01")) else 0)
+    fps = f.get("fps") or 0
+    size_or_bitrate = f.get("filesize") or f.get("filesize_approx") or (f.get("tbr") or 0) * 1000 or (f.get("vbr") or 0) * 1000
+    return (has_size, ext_score, codec_score, fps, size_or_bitrate)
+
+
 @app.get("/api/formats")
 def get_formats(url: str):
     if not (url.startswith("http://") or url.startswith("https://")):
@@ -169,11 +179,49 @@ def get_formats(url: str):
     except Exception as e:
         raise HTTPException(400, f"Не удалось получить информацию: {e}")
 
-    formats = []
-    for f in info.get("formats", []):
-        if f.get("vcodec") == "none" and f.get("acodec") == "none":
-            continue
+    raw_formats = info.get("formats", [])
+    valid_formats = [
+        f for f in raw_formats
+        if not (f.get("vcodec") == "none" and f.get("acodec") == "none")
+    ]
+
+    video_candidates = [f for f in valid_formats if f.get("vcodec") != "none"]
+    candidates = video_candidates if video_candidates else [f for f in valid_formats if f.get("acodec") != "none"]
+
+    by_tier = {}
+    for f in candidates:
         height = f.get("height")
+        if not height and f.get("resolution"):
+            m = re.search(r"x(\d+)", f.get("resolution"))
+            if m:
+                try:
+                    height = int(m.group(1))
+                except ValueError:
+                    pass
+
+        if height:
+            tier_key = f"{height}p"
+        elif f.get("format_note"):
+            tier_key = f.get("format_note").strip()
+        elif f.get("resolution"):
+            tier_key = f.get("resolution").strip()
+        else:
+            tier_key = str(f.get("format_id"))
+
+        if tier_key not in by_tier or _format_score(f) > _format_score(by_tier[tier_key]):
+            by_tier[tier_key] = f
+
+    formats = []
+    for f in by_tier.values():
+        height = f.get("height") or 0
+        if not height and f.get("resolution"):
+            m = re.search(r"x(\d+)", f.get("resolution"))
+            if m:
+                try:
+                    height = int(m.group(1))
+                except ValueError:
+                    pass
+
         note = f.get("format_note") or ""
         ext = f.get("ext")
         vcodec = f.get("vcodec")
@@ -194,16 +242,25 @@ def get_formats(url: str):
             "label": " · ".join(label_parts) or f.get("format_id"),
             "has_video": vcodec != "none",
             "has_audio": acodec != "none",
-            "height": height or 0,
+            "height": height,
         })
 
     formats.sort(key=lambda x: (-x["height"], not x["has_audio"]))
+
+    # Additional deduplication safeguard by final label and extension
+    seen_labels = set()
+    deduped_formats = []
+    for fmt in formats:
+        key = (fmt["label"], fmt.get("ext"))
+        if key not in seen_labels:
+            seen_labels.add(key)
+            deduped_formats.append(fmt)
 
     return {
         "title": info.get("title"),
         "duration": info.get("duration"),
         "thumbnail": info.get("thumbnail"),
-        "formats": formats,
+        "formats": deduped_formats,
     }
 
 
