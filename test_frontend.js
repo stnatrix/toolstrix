@@ -406,27 +406,65 @@ assert.strictEqual(formatMpegDownloadName('photo.png', 'output.jpg', 'image/jpeg
 assert.strictEqual(formatMpegDownloadName('clip', 'output.mp4', 'video/mp4'), 'natrix_clip.mp4');
 console.log("✓ mpeg/compress: download filenames correctly preserve original stem and ensure valid extensions");
 
-// Test pass history deduplication logic
+// Test pass history deduplication, 7-day TTL, and migration logic
+const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+function testCleanHistory(items, customNow = Date.now()) {
+  if (!Array.isArray(items)) return [];
+  const result = [];
+  for (const item of items) {
+    let pwd = '';
+    let ts = customNow;
+    if (typeof item === 'string' && item.length > 0) {
+      pwd = item;
+    } else if (item && typeof item === 'object' && typeof item.pwd === 'string' && item.pwd.length > 0) {
+      pwd = item.pwd;
+      ts = typeof item.ts === 'number' && Number.isFinite(item.ts) ? item.ts : customNow;
+    }
+    if (pwd && (customNow - ts <= MAX_HISTORY_AGE_MS)) {
+      result.push({ pwd, ts });
+    }
+  }
+  return result.slice(0, 20);
+}
+
 let testHistory = [];
 function testAddToHistory(pwd) {
   if (!pwd) return;
-  if (testHistory.length > 0 && testHistory[0] === pwd) return;
-  const existingIdx = testHistory.indexOf(pwd);
+  testHistory = testCleanHistory(testHistory);
+  if (testHistory.length > 0 && testHistory[0].pwd === pwd) return;
+  const existingIdx = testHistory.findIndex(item => item.pwd === pwd);
   if (existingIdx !== -1) testHistory.splice(existingIdx, 1);
-  testHistory.unshift(pwd);
+  testHistory.unshift({ pwd, ts: Date.now() });
   if (testHistory.length > 20) testHistory.pop();
 }
+
 testAddToHistory('pwd1');
 assert.strictEqual(testHistory.length, 1);
-testAddToHistory('pwd1'); // duplicate consecutive click
+assert.strictEqual(testHistory[0].pwd, 'pwd1');
+testAddToHistory('pwd1');
 assert.strictEqual(testHistory.length, 1, "Duplicate click on same password must not rewrite history");
 testAddToHistory('pwd2');
 assert.strictEqual(testHistory.length, 2);
-assert.strictEqual(testHistory[0], 'pwd2');
-testAddToHistory('pwd1'); // move existing to top
+assert.strictEqual(testHistory[0].pwd, 'pwd2');
+testAddToHistory('pwd1');
 assert.strictEqual(testHistory.length, 2);
-assert.strictEqual(testHistory[0], 'pwd1');
-console.log("✓ pass: history deduplication and ordering verified");
+assert.strictEqual(testHistory[0].pwd, 'pwd1');
+
+// Test 7-day TTL expiration
+const now = Date.now();
+const eightDaysAgo = now - 8 * 24 * 60 * 60 * 1000;
+const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
+const mixedHistory = [
+  { pwd: 'expired_pass', ts: eightDaysAgo },
+  { pwd: 'valid_pass', ts: threeDaysAgo },
+  'legacy_string_pass'
+];
+const cleaned = testCleanHistory(mixedHistory, now);
+assert.strictEqual(cleaned.length, 2, "Expired passwords older than 7 days must be pruned");
+assert.strictEqual(cleaned[0].pwd, 'valid_pass');
+assert.strictEqual(cleaned[1].pwd, 'legacy_string_pass');
+assert.strictEqual(cleaned[1].ts, now, "Legacy string passwords must be migrated with current timestamp");
+console.log("✓ pass: history deduplication, 7-day TTL, and migration verified");
 
 // Test DLP format deduplication logic
 function deduplicateFormats(rawFormats) {

@@ -88,6 +88,29 @@
     }
   }
 
+  const MAX_HISTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+  const MAX_HISTORY_ITEMS = 20;
+
+  function cleanHistory(items) {
+    if (!Array.isArray(items)) return [];
+    const now = Date.now();
+    const result = [];
+    for (const item of items) {
+      let pwd = '';
+      let ts = now;
+      if (typeof item === 'string' && item.length > 0) {
+        pwd = item;
+      } else if (item && typeof item === 'object' && typeof item.pwd === 'string' && item.pwd.length > 0) {
+        pwd = item.pwd;
+        ts = typeof item.ts === 'number' && Number.isFinite(item.ts) ? item.ts : now;
+      }
+      if (pwd && (now - ts <= MAX_HISTORY_AGE_MS)) {
+        result.push({ pwd, ts });
+      }
+    }
+    return result.slice(0, MAX_HISTORY_ITEMS);
+  }
+
   function loadState() {
     const savedSettings = storage.getItem('natrix.pass.settings');
     if (savedSettings) {
@@ -139,10 +162,9 @@
     if (savedHistory) {
       try {
         const parsedHistory = JSON.parse(savedHistory);
-        if (Array.isArray(parsedHistory)) {
-          history = parsedHistory.filter(item => typeof item === 'string' && item.length > 0);
-          renderHistory();
-        }
+        history = cleanHistory(parsedHistory);
+        saveHistory();
+        renderHistory();
       } catch (e) {
         console.error("natrix.pass: Error parsing history log:", e);
       }
@@ -176,7 +198,7 @@
         generate(false);
       });
       els.lenSlider.addEventListener('change', () => {
-        generate(true);
+        generate(false);
       });
     }
 
@@ -193,7 +215,7 @@
           settings.pass.nums = !!els.chkNums.checked;
           settings.pass.syms = !!els.chkSyms.checked;
           saveSettings();
-          generate(true);
+          generate(false);
         });
       }
     });
@@ -202,7 +224,7 @@
       els.chkAvoid.addEventListener('change', () => {
         settings.pass.avoid = !!els.chkAvoid.checked;
         saveSettings();
-        generate(true);
+        generate(false);
       });
     }
 
@@ -214,7 +236,7 @@
         generate(false);
       });
       els.wordsSlider.addEventListener('change', () => {
-        generate(true);
+        generate(false);
       });
     }
 
@@ -222,7 +244,7 @@
       els.sepSelect.addEventListener('change', (e) => {
         settings.phrase.sep = e.target.value;
         saveSettings();
-        generate(true);
+        generate(false);
       });
     }
 
@@ -230,7 +252,7 @@
       els.langSelect.addEventListener('change', (e) => {
         settings.phrase.lang = e.target.value;
         saveSettings();
-        generate(true);
+        generate(false);
       });
     }
 
@@ -444,11 +466,12 @@
 
   function addToHistory(pwd) {
     if (!pwd) return;
-    if (history.length > 0 && history[0] === pwd) return;
-    const existingIdx = history.indexOf(pwd);
+    history = cleanHistory(history);
+    if (history.length > 0 && history[0].pwd === pwd) return;
+    const existingIdx = history.findIndex(item => item.pwd === pwd);
     if (existingIdx !== -1) history.splice(existingIdx, 1);
-    history.unshift(pwd);
-    if (history.length > 20) history.pop();
+    history.unshift({ pwd, ts: Date.now() });
+    if (history.length > MAX_HISTORY_ITEMS) history.pop();
     saveHistory();
     renderHistory();
   }
@@ -465,7 +488,10 @@
     }
 
     els.historyList.innerHTML = '';
-    history.forEach((pwd, idx) => {
+    history.forEach((entry, idx) => {
+      const pwd = entry.pwd;
+      const ts = entry.ts;
+      const dateStr = new Date(ts).toLocaleString();
       const item = document.createElement('div');
       item.style.display = 'flex';
       item.style.justifyContent = 'space-between';
@@ -479,6 +505,7 @@
 
       const textNode = document.createElement('span');
       textNode.textContent = pwd;
+      textNode.title = dateStr;
       textNode.style.wordBreak = 'break-all';
       textNode.style.cursor = 'pointer';
       textNode.style.color = 'var(--text-dim)';
