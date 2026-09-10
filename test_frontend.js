@@ -495,4 +495,74 @@ assert.strictEqual(deduped[1].label, '1440p · 10MB');
 assert.strictEqual(deduped[2].label, '1080p · 5MB');
 console.log("✓ dlp: format dropdown deduplication verified");
 
+// 4. Test PWA Manifest, Service Worker, Icons, and index.html integration
+const manifestRaw = fs.readFileSync('static/manifest.webmanifest', 'utf8');
+const manifest = JSON.parse(manifestRaw);
+assert.strictEqual(manifest.name, 'natrix.tools', "Manifest name must be natrix.tools");
+assert.strictEqual(manifest.short_name, 'natrix', "Manifest short_name must be natrix");
+assert.strictEqual(manifest.display, 'standalone', "Manifest display must be standalone");
+assert.strictEqual(manifest.theme_color, '#0a0b0e', "Manifest theme_color must be #0a0b0e");
+assert.strictEqual(manifest.background_color, '#0a0b0e', "Manifest background_color must be #0a0b0e");
+const iconSizes = manifest.icons.map(i => i.sizes);
+assert(iconSizes.includes('96x96'), "Manifest must include 96x96 icon");
+assert(iconSizes.includes('192x192'), "Manifest must include 192x192 icon");
+assert(iconSizes.includes('512x512'), "Manifest must include 512x512 icon");
+console.log("✓ pwa: manifest.webmanifest syntax and required fields verified");
+
+// Verify icon files on disk
+assert(fs.existsSync('static/icon-96.png'), "static/icon-96.png must exist");
+assert(fs.existsSync('static/icon-192.png'), "static/icon-192.png must exist");
+assert(fs.existsSync('static/icon-512.png'), "static/icon-512.png must exist");
+assert(fs.existsSync('static/favicon.ico'), "static/favicon.ico must exist");
+assert(fs.existsSync('static/favicon.svg'), "static/favicon.svg must exist");
+assert(fs.statSync('static/icon-96.png').size > 1000, "icon-96.png must not be empty");
+assert(fs.statSync('static/icon-192.png').size > 1000, "icon-192.png must not be empty");
+assert(fs.statSync('static/icon-512.png').size > 1000, "icon-512.png must not be empty");
+console.log("✓ pwa: icon files (96, 192, 512, favicon.ico, favicon.svg) verified on disk");
+
+// Verify sw.js syntax and invariants
+const swCode = fs.readFileSync('static/sw.js', 'utf8');
+assert(swCode.includes('natrix-tools-v2.018'), "sw.js must contain current cache version natrix-tools-v2.018");
+assert(swCode.includes("url.pathname.startsWith('/api/')"), "sw.js must preserve network-only for /api/ routes");
+assert(swCode.includes("APP_SHELL_ASSETS"), "sw.js must define APP_SHELL_ASSETS for precaching");
+assert(swCode.includes("caches.delete"), "sw.js must purge old caches on activate");
+
+// Verify sw.js executes cleanly in Service Worker global context simulation
+const swSandbox = {
+  self: {
+    addEventListener: () => {},
+    skipWaiting: () => {},
+    clients: { claim: () => Promise.resolve() }
+  },
+  caches: {
+    open: () => Promise.resolve({ add: () => Promise.resolve(), put: () => Promise.resolve() }),
+    keys: () => Promise.resolve([]),
+    delete: () => Promise.resolve(),
+    match: () => Promise.resolve(null),
+  },
+  URL: URL,
+  Request: function (url, opts) { this.url = url; this.opts = opts; },
+  Response: function (body, init) { this.body = body; this.init = init; },
+  Promise: Promise,
+  console: console,
+};
+swSandbox.self.self = swSandbox.self;
+vm.runInNewContext(swCode, swSandbox);
+console.log("✓ pwa: sw.js syntax and Service Worker event wiring verified");
+
+// Verify index.html tags and versions
+const indexHtml = fs.readFileSync('static/index.html', 'utf8');
+assert(indexHtml.includes('<span class="footer-version">v2.018</span>'), "index.html footer must be v2.018");
+assert(indexHtml.includes('rel="manifest" href="/manifest.webmanifest"'), "index.html must link to /manifest.webmanifest");
+assert(indexHtml.includes('rel="icon" type="image/x-icon" href="/favicon.ico"'), "index.html must link to favicon.ico");
+assert(indexHtml.includes('name="theme-color" content="#0a0b0e"'), "index.html must specify theme-color meta tag");
+assert(indexHtml.includes('/static/style.css?v=2.018'), "style.css query version must be 2.018");
+assert(indexHtml.includes('/static/app.js?v=2.018'), "app.js query version must be 2.018");
+
+// Verify app.js registers service worker
+const appJsCode = fs.readFileSync('static/app.js', 'utf8');
+assert(appJsCode.includes("navigator.serviceWorker.register('/sw.js'"), "app.js must register /sw.js");
+console.log("✓ pwa: index.html and app.js registration verified");
+
 console.log("ALL FRONTEND TESTS PASSED!");
+

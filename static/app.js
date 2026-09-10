@@ -197,8 +197,18 @@
     }
   }
 
-  window.addEventListener('popstate', handleHash);
-  window.addEventListener('hashchange', handleHash);
-
   handleHash();
+
+  // Register Service Worker for instant offline/cache-first PWA loading
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      }).catch((err) => {
+        console.warn('[natrix] ServiceWorker registration failed:', err);
+      });
+    });
+  }
 })();

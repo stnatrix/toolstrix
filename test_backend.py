@@ -22,6 +22,33 @@ def test_static_headers():
     assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
     assert response.headers.get("Cache-Control") == "no-cache"
 
+def test_sw_headers():
+    response = client.get("/sw.js")
+    assert response.status_code == 200
+    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+    assert response.headers.get("Service-Worker-Allowed") == "/"
+    assert response.headers.get("Cache-Control") == "no-cache"
+    assert "javascript" in response.headers.get("content-type", "")
+
+    # Also verify /static/sw.js carries Service-Worker-Allowed header
+    res_static_sw = client.get("/static/sw.js")
+    assert res_static_sw.status_code == 200
+    assert res_static_sw.headers.get("Service-Worker-Allowed") == "/"
+
+def test_manifest_headers():
+    response = client.get("/manifest.webmanifest")
+    assert response.status_code == 200
+    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+    assert "manifest" in response.headers.get("content-type", "")
+
+def test_favicon_headers():
+    response = client.get("/favicon.ico")
+    assert response.status_code == 200
+    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+
 def test_safe_filename():
     assert _safe_filename("simple.mp4") == "simple.mp4"
     assert _safe_filename("hello/world:video?.mkv") == "hello_world_video_.mkv"
@@ -258,6 +285,9 @@ def test_api_formats_error():
 if __name__ == "__main__":
     test_index_headers()
     test_static_headers()
+    test_sw_headers()
+    test_manifest_headers()
+    test_favicon_headers()
     test_safe_filename()
     test_clean_stale_temp()
     test_api_compress_validation()

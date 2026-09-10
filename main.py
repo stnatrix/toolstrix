@@ -141,6 +141,9 @@ async def cross_origin_isolation(request, call_next):
     response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
 
+    if request.url.path in ("/sw.js", "/static/sw.js"):
+        response.headers["Service-Worker-Allowed"] = "/"
+
     if request.url.path.startswith("/static/"):
         response.headers.setdefault("Cache-Control", "no-cache")
     return response
@@ -150,6 +153,55 @@ async def cross_origin_isolation(request, call_next):
 def index():
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/sw.js")
+def service_worker():
+    sw_file = STATIC_DIR / "sw.js"
+    if not sw_file.exists():
+        raise HTTPException(404, "Service Worker not found")
+    return FileResponse(
+        path=sw_file,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-cache",
+            "Service-Worker-Allowed": "/",
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+        },
+    )
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    manifest_file = STATIC_DIR / "manifest.webmanifest"
+    if not manifest_file.exists():
+        raise HTTPException(404, "Manifest not found")
+    return FileResponse(
+        path=manifest_file,
+        media_type="application/manifest+json",
+        headers={
+            "Cache-Control": "no-cache",
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+        },
+    )
+
+
+@app.get("/favicon.ico")
+def favicon():
+    fav_file = STATIC_DIR / "favicon.ico"
+    if not fav_file.exists():
+        raise HTTPException(404, "Favicon not found")
+    return FileResponse(
+        path=fav_file,
+        media_type="image/x-icon",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+        },
+    )
 
 
 def _format_score(f: dict) -> tuple:
