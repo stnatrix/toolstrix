@@ -500,6 +500,7 @@ const manifestRaw = fs.readFileSync('static/manifest.webmanifest', 'utf8');
 const manifest = JSON.parse(manifestRaw);
 assert.strictEqual(manifest.name, 'natrix.tools', "Manifest name must be natrix.tools");
 assert.strictEqual(manifest.short_name, 'natrix', "Manifest short_name must be natrix");
+assert.strictEqual(manifest.id, '/', "Manifest id must be /");
 assert.strictEqual(manifest.display, 'standalone', "Manifest display must be standalone");
 assert.strictEqual(manifest.theme_color, '#0a0b0e', "Manifest theme_color must be #0a0b0e");
 assert.strictEqual(manifest.background_color, '#0a0b0e', "Manifest background_color must be #0a0b0e");
@@ -507,7 +508,10 @@ const iconSizes = manifest.icons.map(i => i.sizes);
 assert(iconSizes.includes('96x96'), "Manifest must include 96x96 icon");
 assert(iconSizes.includes('192x192'), "Manifest must include 192x192 icon");
 assert(iconSizes.includes('512x512'), "Manifest must include 512x512 icon");
-console.log("✓ pwa: manifest.webmanifest syntax and required fields verified");
+assert(Array.isArray(manifest.shortcuts) && manifest.shortcuts.length >= 4, "Manifest must have quick shortcuts");
+const shortcutNames = manifest.shortcuts.map(s => s.name);
+assert(shortcutNames.includes('DLP') && shortcutNames.includes('MPEG'), "Shortcuts must include DLP and MPEG");
+console.log("✓ pwa: manifest.webmanifest syntax, required fields, and shortcuts verified");
 
 // Verify icon files on disk
 assert(fs.existsSync('static/icon-96.png'), "static/icon-96.png must exist");
@@ -525,14 +529,21 @@ const swCode = fs.readFileSync('static/sw.js', 'utf8');
 assert(swCode.includes('natrix-tools-v2.018'), "sw.js must contain current cache version natrix-tools-v2.018");
 assert(swCode.includes("url.pathname.startsWith('/api/')"), "sw.js must preserve network-only for /api/ routes");
 assert(swCode.includes("APP_SHELL_ASSETS"), "sw.js must define APP_SHELL_ASSETS for precaching");
+assert(swCode.includes("814.ffmpeg.js"), "sw.js must precache ffmpeg chunk 814.ffmpeg.js");
+assert(swCode.includes("ffmpeg-core.worker.js"), "sw.js must precache ffmpeg-core.worker.js");
+assert(swCode.includes("ffmpeg-core.js"), "sw.js must precache ffmpeg-core.js");
 assert(swCode.includes("caches.delete"), "sw.js must purge old caches on activate");
+assert(swCode.includes("event.waitUntil"), "sw.js must use event.waitUntil to preserve background cache updates");
+assert(swCode.includes("ignoreSearch: true"), "sw.js must support search parameter ignoring for robust cache hits");
 
 // Verify sw.js executes cleanly in Service Worker global context simulation
+let registeredListeners = {};
 const swSandbox = {
   self: {
-    addEventListener: () => {},
+    addEventListener: (type, fn) => { registeredListeners[type] = fn; },
     skipWaiting: () => {},
-    clients: { claim: () => Promise.resolve() }
+    clients: { claim: () => Promise.resolve() },
+    location: { origin: 'https://tools.stnatrix.space' },
   },
   caches: {
     open: () => Promise.resolve({ add: () => Promise.resolve(), put: () => Promise.resolve() }),
@@ -548,6 +559,9 @@ const swSandbox = {
 };
 swSandbox.self.self = swSandbox.self;
 vm.runInNewContext(swCode, swSandbox);
+assert(typeof registeredListeners['install'] === 'function', "sw.js must register install event");
+assert(typeof registeredListeners['activate'] === 'function', "sw.js must register activate event");
+assert(typeof registeredListeners['fetch'] === 'function', "sw.js must register fetch event");
 console.log("✓ pwa: sw.js syntax and Service Worker event wiring verified");
 
 // Verify index.html tags and versions
@@ -556,12 +570,14 @@ assert(indexHtml.includes('<span class="footer-version">v2.018</span>'), "index.
 assert(indexHtml.includes('rel="manifest" href="/manifest.webmanifest"'), "index.html must link to /manifest.webmanifest");
 assert(indexHtml.includes('rel="icon" type="image/x-icon" href="/favicon.ico"'), "index.html must link to favicon.ico");
 assert(indexHtml.includes('name="theme-color" content="#0a0b0e"'), "index.html must specify theme-color meta tag");
+assert(indexHtml.includes('name="mobile-web-app-capable" content="yes"'), "index.html must specify mobile-web-app-capable meta tag");
 assert(indexHtml.includes('/static/style.css?v=2.018'), "style.css query version must be 2.018");
 assert(indexHtml.includes('/static/app.js?v=2.018'), "app.js query version must be 2.018");
 
 // Verify app.js registers service worker
 const appJsCode = fs.readFileSync('static/app.js', 'utf8');
 assert(appJsCode.includes("navigator.serviceWorker.register('/sw.js'"), "app.js must register /sw.js");
+assert(appJsCode.includes("updatefound"), "app.js must listen for updatefound");
 console.log("✓ pwa: index.html and app.js registration verified");
 
 console.log("ALL FRONTEND TESTS PASSED!");

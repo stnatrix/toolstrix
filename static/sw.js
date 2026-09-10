@@ -15,6 +15,8 @@ const APP_SHELL_ASSETS = [
   '/',
   '/manifest.webmanifest',
   '/favicon.ico',
+  '/favicon.svg',
+  '/apple-touch-icon.png',
   '/static/manifest.webmanifest',
   '/static/favicon.ico',
   '/static/favicon.svg',
@@ -24,6 +26,9 @@ const APP_SHELL_ASSETS = [
   '/static/style.css?v=2.018',
   '/static/sfx.js?v=2.0.0',
   '/static/ffmpeg/ffmpeg.js?v=1.0.2',
+  '/static/ffmpeg/814.ffmpeg.js',
+  '/static/ffmpeg/ffmpeg-core.js',
+  '/static/ffmpeg/ffmpeg-core.worker.js',
   '/static/ffmpeg-helper.js?v=2.018',
   '/static/dlp.js?v=2.018',
   '/static/mpeg.js?v=2.018',
@@ -81,8 +86,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // 1. Only process GET / HEAD requests
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
+  // 1. Only process GET requests from our own origin
+  if (request.method !== 'GET') {
+    return;
+  }
+  if (url.origin !== self.location.origin) {
     return;
   }
 
@@ -98,7 +106,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 4. Navigation requests (HTML document) - Cache-first with stale-while-revalidate
-  if (request.mode === 'navigate') {
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       caches.match('/', { ignoreSearch: true }).then((cached) => {
         const fetchPromise = fetch(request).then((networkResponse) => {
@@ -108,11 +116,16 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         }).catch((err) => {
-          console.warn('[natrix-sw] Navigation network fetch failed, using cache:', err);
-          return cached;
+          console.warn('[natrix-sw] Navigation fetch failed:', err);
+          if (cached) return cached;
+          throw err;
         });
 
-        return cached || fetchPromise;
+        if (cached) {
+          event.waitUntil(fetchPromise);
+          return cached;
+        }
+        return fetchPromise;
       })
     );
     return;
@@ -121,17 +134,28 @@ self.addEventListener('fetch', (event) => {
   // 5. Static assets - Cache-first with stale-while-revalidate
   event.respondWith(
     caches.match(request).then((cached) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return networkResponse;
-      }).catch((err) => {
-        return cached;
-      });
+      const matchPromise = cached
+        ? Promise.resolve(cached)
+        : caches.match(request, { ignoreSearch: true });
 
-      return cached || fetchPromise;
+      return matchPromise.then((matched) => {
+        const fetchPromise = fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return networkResponse;
+        }).catch((err) => {
+          if (matched) return matched;
+          throw err;
+        });
+
+        if (matched) {
+          event.waitUntil(fetchPromise);
+          return matched;
+        }
+        return fetchPromise;
+      });
     })
   );
 });

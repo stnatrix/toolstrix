@@ -9,45 +9,75 @@ from main import app, _safe_filename, _clean_stale_temp, TMP_DIR
 client = TestClient(app)
 
 def test_index_headers():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
-    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
-    assert response.headers.get("Cache-Control") == "no-cache"
+    for method in (client.get, client.head):
+        response = method("/")
+        assert response.status_code == 200
+        assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+        assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+        assert response.headers.get("Cache-Control") == "no-cache"
+
+    # Also test /index.html alias
+    for method in (client.get, client.head):
+        res_alias = method("/index.html")
+        assert res_alias.status_code == 200
+        assert res_alias.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+        assert res_alias.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
 
 def test_static_headers():
-    response = client.get("/static/app.js")
-    assert response.status_code == 200
-    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
-    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
-    assert response.headers.get("Cache-Control") == "no-cache"
+    for method in (client.get, client.head):
+        response = method("/static/app.js")
+        assert response.status_code == 200
+        assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+        assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+        assert response.headers.get("Cache-Control") == "no-cache"
 
 def test_sw_headers():
-    response = client.get("/sw.js")
-    assert response.status_code == 200
-    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
-    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
-    assert response.headers.get("Service-Worker-Allowed") == "/"
-    assert response.headers.get("Cache-Control") == "no-cache"
-    assert "javascript" in response.headers.get("content-type", "")
+    for method in (client.get, client.head):
+        response = method("/sw.js")
+        assert response.status_code == 200
+        assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+        assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+        assert response.headers.get("Service-Worker-Allowed") == "/"
+        assert "no-cache" in response.headers.get("Cache-Control", "")
+        assert "no-store" in response.headers.get("Cache-Control", "")
+        assert "javascript" in response.headers.get("content-type", "")
 
-    # Also verify /static/sw.js carries Service-Worker-Allowed header
-    res_static_sw = client.get("/static/sw.js")
-    assert res_static_sw.status_code == 200
-    assert res_static_sw.headers.get("Service-Worker-Allowed") == "/"
+    # Also verify /static/sw.js carries Service-Worker-Allowed and no-store headers
+    for method in (client.get, client.head):
+        res_static_sw = method("/static/sw.js")
+        assert res_static_sw.status_code == 200
+        assert res_static_sw.headers.get("Service-Worker-Allowed") == "/"
+        assert "no-store" in res_static_sw.headers.get("Cache-Control", "")
 
 def test_manifest_headers():
-    response = client.get("/manifest.webmanifest")
-    assert response.status_code == 200
-    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
-    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
-    assert "manifest" in response.headers.get("content-type", "")
+    for method in (client.get, client.head):
+        response = method("/manifest.webmanifest")
+        assert response.status_code == 200
+        assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+        assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+        assert "manifest" in response.headers.get("content-type", "")
 
 def test_favicon_headers():
-    response = client.get("/favicon.ico")
-    assert response.status_code == 200
-    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
-    assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+    for method in (client.get, client.head):
+        response = method("/favicon.ico")
+        assert response.status_code == 200
+        assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+        assert response.headers.get("Cross-Origin-Embedder-Policy") == "require-corp"
+        assert "image" in response.headers.get("content-type", "")
+
+def test_pwa_icon_routes():
+    for method in (client.get, client.head):
+        res_svg = method("/favicon.svg")
+        assert res_svg.status_code == 200
+        assert res_svg.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+        assert "svg" in res_svg.headers.get("content-type", "")
+
+        res_apple = method("/apple-touch-icon.png")
+        assert res_apple.status_code == 200
+        assert "image/png" in res_apple.headers.get("content-type", "")
+
+        res_precomp = method("/apple-touch-icon-precomposed.png")
+        assert res_precomp.status_code == 200
 
 def test_safe_filename():
     assert _safe_filename("simple.mp4") == "simple.mp4"
@@ -288,6 +318,7 @@ if __name__ == "__main__":
     test_sw_headers()
     test_manifest_headers()
     test_favicon_headers()
+    test_pwa_icon_routes()
     test_safe_filename()
     test_clean_stale_temp()
     test_api_compress_validation()

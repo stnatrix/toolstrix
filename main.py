@@ -143,19 +143,20 @@ async def cross_origin_isolation(request, call_next):
 
     if request.url.path in ("/sw.js", "/static/sw.js"):
         response.headers["Service-Worker-Allowed"] = "/"
-
-    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    elif request.url.path.startswith("/static/"):
         response.headers.setdefault("Cache-Control", "no-cache")
     return response
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
+@app.api_route("/index.html", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def index():
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
-@app.get("/sw.js")
+@app.api_route("/sw.js", methods=["GET", "HEAD"])
 def service_worker():
     sw_file = STATIC_DIR / "sw.js"
     if not sw_file.exists():
@@ -164,7 +165,7 @@ def service_worker():
         path=sw_file,
         media_type="application/javascript",
         headers={
-            "Cache-Control": "no-cache",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
             "Service-Worker-Allowed": "/",
             "Cross-Origin-Opener-Policy": "same-origin",
             "Cross-Origin-Embedder-Policy": "require-corp",
@@ -172,7 +173,7 @@ def service_worker():
     )
 
 
-@app.get("/manifest.webmanifest")
+@app.api_route("/manifest.webmanifest", methods=["GET", "HEAD"])
 def manifest():
     manifest_file = STATIC_DIR / "manifest.webmanifest"
     if not manifest_file.exists():
@@ -188,7 +189,7 @@ def manifest():
     )
 
 
-@app.get("/favicon.ico")
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"])
 def favicon():
     fav_file = STATIC_DIR / "favicon.ico"
     if not fav_file.exists():
@@ -196,6 +197,39 @@ def favicon():
     return FileResponse(
         path=fav_file,
         media_type="image/x-icon",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+        },
+    )
+
+
+@app.api_route("/favicon.svg", methods=["GET", "HEAD"])
+def favicon_svg():
+    svg_file = STATIC_DIR / "favicon.svg"
+    if not svg_file.exists():
+        raise HTTPException(404, "Favicon SVG not found")
+    return FileResponse(
+        path=svg_file,
+        media_type="image/svg+xml",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+        },
+    )
+
+
+@app.api_route("/apple-touch-icon.png", methods=["GET", "HEAD"])
+@app.api_route("/apple-touch-icon-precomposed.png", methods=["GET", "HEAD"])
+def apple_touch_icon():
+    icon_file = STATIC_DIR / "icon-192.png"
+    if not icon_file.exists():
+        raise HTTPException(404, "Apple Touch Icon not found")
+    return FileResponse(
+        path=icon_file,
+        media_type="image/png",
         headers={
             "Cache-Control": "public, max-age=86400",
             "Cross-Origin-Opener-Policy": "same-origin",
