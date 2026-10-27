@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>toolstrix</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1 class="title">toolstrix</h1>
+          <span class="subtitle">media downloader</span>
+        </div>
+        <button id="logout-btn" class="btn-icon" type="button" title="Sign out">Sign out</button>
+      </div>
+
+      <div id="error-banner" class="banner banner-error" style="display: none;"></div>
+
+      <div class="field-group">
+        <label class="field-label" for="url-input">Source URL</label>
+        <input
+          id="url-input"
+          class="input-text"
+          type="url"
+          placeholder="Paste video or audio link"
+          autocomplete="off"
+          autofocus
+        >
+      </div>
+
+      <div id="preview-box" class="preview-box" style="display: none;">
+        <img id="preview-thumb" class="preview-thumb" src="" alt="Thumbnail">
+        <div class="preview-meta">
+          <div id="preview-title" class="preview-title"></div>
+          <div id="preview-duration" class="preview-duration"></div>
+        </div>
+      </div>
+
+      <div id="controls-section" style="display: none;">
+        <div class="field-group">
+          <label class="field-label" for="video-select">Video</label>
+          <select id="video-select" class="select"></select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="audio-select">Audio</label>
+          <select id="audio-select" class="select"></select>
+        </div>
+
+        <button id="download-btn" class="btn-primary" type="button">
+          <span id="btn-text">Download</span>
+        </button>
+
+        <div id="progress-wrap" class="progress-wrap" style="display: none;">
+          <div class="progress-bar-bg">
+            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+          </div>
+          <div class="progress-info">
+            <span id="status-label">Initializing...</span>
+            <span id="eta-label"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span>2.0.0</span>
+        <button id="sound-toggle" class="btn-icon" type="button">Sound: On</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/sfx.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

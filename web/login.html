@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>toolstrix · access</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1 class="title">toolstrix</h1>
+        <span class="subtitle">restricted access</span>
+      </div>
+
+      <div id="error-banner" class="banner banner-error" style="display: none;"></div>
+
+      <form id="login-form">
+        <div class="field-group">
+          <label class="field-label" for="access-key">Access Key</label>
+          <input
+            id="access-key"
+            class="input-text"
+            type="password"
+            name="key"
+            autocomplete="current-password"
+            placeholder="Enter key to proceed"
+            required
+            autofocus
+          >
+        </div>
+
+        <button id="submit-btn" class="btn-primary" type="submit">
+          <span>Authenticate</span>
+        </button>
+      </form>
+
+      <div class="footer">
+        <span>2.0.0</span>
+        <button id="sound-toggle" class="btn-icon" type="button">Sound: On</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/sfx.js"></script>
+  <script>
+    const form = document.getElementById("login-form");
+    const keyInput = document.getElementById("access-key");
+    const submitBtn = document.getElementById("submit-btn");
+    const errorBanner = document.getElementById("error-banner");
+    const soundToggle = document.getElementById("sound-toggle");
+
+    function updateSoundLabel() {
+      soundToggle.textContent = window.toolstrixSFX.isMuted() ? "Sound: Off" : "Sound: On";
+    }
+    updateSoundLabel();
+
+    soundToggle.addEventListener("click", () => {
+      window.toolstrixSFX.toggleMute();
+      updateSoundLabel();
+      window.toolstrixSFX.playClick();
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      window.toolstrixSFX.playClick();
+      errorBanner.style.display = "none";
+      submitBtn.disabled = true;
+
+      const key = keyInput.value.trim();
+      try {
+        const res = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key }),
+        });
+
+        if (res.ok) {
+          window.location.href = "/";
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        errorBanner.textContent = data.detail || "Authentication failed.";
+        errorBanner.style.display = "flex";
+      } catch (err) {
+        errorBanner.textContent = "Network error. Please check your connection.";
+        errorBanner.style.display = "flex";
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
