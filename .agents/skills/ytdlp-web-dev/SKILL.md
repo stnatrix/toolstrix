@@ -1,47 +1,28 @@
 ---
 name: stnatrix.space
-description: Инструкции по разработке, деплою и обслуживанию проекта ytdlp-web на VPS
+description: Instructions for developing, deploying, and maintaining toolstrix 2.0 on Frankfurt VPS
 ---
 
-# Разработка и обслуживание проекта ytdlp-web
+# Toolstrix 2.0 Development & Maintenance
 
-Этот навык автоматически подгружается для ознакомления с архитектурой проекта, доступами и ограничениями при работе на VPS.
+## 1. Server Access and Port Invariants
+* **SSH Connection**: `ssh vps` (Frankfurt VPS, Debian 12, 1 vCPU / 1GB RAM).
+* **Port Safety**: VPN service **3x-ui** and **Hysteria2** protocol run on this host.
+  * *Critical Rule*: **NEVER** interfere with their ports or certificates.
+  * Our service `toolstrix` runs on internal port **`8098`** (proxied via Nginx to `tools.stnatrix.space`).
+  * Staging and atomic cutover: `toolstrix.service` (8098) operates independently from legacy `ytdlp-web` (8099).
 
-## 1. Доступ к серверу и ограничения
-*   **Подключение по SSH**: Используй команду `ssh vps`.
-*   **Безопасность портов**: На сервере запущен VPN-сервер **3x-ui** и протокол **Hysteria2**.
-    *   *Критически важно*: **НЕ пересекать их порты** и не менять существующие привязки портов.
-    *   Наш сервис `ytdlp-web` работает на внутреннем порту `8099` (проксируется через Nginx на публичный порт `80` для домена `tools.stnatrix.space`).
+## 2. Server Paths and Units
+* Working directory: `/opt/toolstrix/`
+* Systemd service: `/etc/systemd/system/toolstrix.service`
+* Update service/timer: `/etc/systemd/system/toolstrix-update.service`, `/etc/systemd/system/toolstrix-update.timer`
+* Nginx virtualhost: `/etc/nginx/sites-available/toolstrix.conf` (symlinked into `sites-enabled/`)
+* System user: `ytdlpweb` (unprivileged, `/usr/sbin/nologin`)
+* Resource constraints: `MemoryMax=350M`, `CPUQuota=70%`, `PrivateTmp=true`, `ProtectSystem=strict`
 
-## 2. Что МОЖНО и ЧТО НЕЛЬЗЯ трогать
-*   ❌ **НЕЛЬЗЯ трогать**:
-    *   Существующие nginx-конфиги для 3x-ui.
-    *   Сертификаты Hysteria2.
-    *   Существующие сайты в `sites-enabled`, не относящиеся к проекту.
-*   ✅ **МОЖНО изменять**:
-    *   Код бэкенда (`/opt/ytdlp-web/main.py`).
-    *   Файлы фронтенда в `/opt/ytdlp-web/static/` (`index.html`, `style.css`, `app.js`, `dlp.js`, `mpeg.js`, `compress.js`, `pass.js`, `ffmpeg-helper.js`, `wordlist-en.js`, `fonts/`, `ffmpeg/`).
-    *   Конфигурацию нашего nginx-виртуалхоста `/etc/nginx/sites-available/ytdlp-web.conf` (и симлинк в `sites-enabled`).
-    *   Сервис systemd `/etc/systemd/system/ytdlp-web.service`.
-
-## 3. Описание и архитектура проекта
-Проект представляет собой единую панель `natrix` с четырьмя инструментами:
-1.  **DLP** (загрузка видео): FastAPI бэкенд обращается к `yt-dlp` и стримит файл пользователю. Для авторизации используется токен `YTDLP_TOKEN` из переменной окружения systemd.
-2.  **MPEG** (обработка медиа): Полностью клиентский модуль на `ffmpeg.wasm`. Обрезка, громкость, фильтры, конвертация видео и картинок происходят прямо в браузере.
-3.  **COMPRESS** (сжатие под размер): Клиентский модуль на `ffmpeg.wasm`, подбирает битрейт под целевой размер в МБ. Если браузерный ffmpeg не справился (AV1/HEVC), предлагает fallback на серверный `POST /api/compress`.
-4.  **PASS** (генератор паролей): Клиентский генератор с историей и расчетом энтропии. Словарь фраз — EFF Long Wordlist (7776 слов) в `static/wordlist-en.js`.
-5. когда появится новый модуль, добавь его сюда.
-
-### Инварианты, которые нельзя нарушать
-Подробности и обоснования — в `README.md`, раздел «Что нельзя ломать». Кратко:
-*   COOP/COEP-заголовки ставит middleware в `main.py`, **не** nginx. Без них `ffmpeg.wasm` не стартует.
-*   У страницы не должно быть ни одного внешнего запроса (шрифты, ffmpeg, словарь — всё в `static/`).
-*   `/static/` отдаётся с `Cache-Control: no-cache` — иначе браузер залипает на старом ответе воркера ffmpeg.
-*   Все вызовы ffmpeg в браузере идут через `natrixSharedFFmpeg.exec()`, который подставляет `-threads` перед именем выходного файла. Без этого libx264 виснет намертво.
-*   `yt-dlp` в `requirements.txt` намеренно не закреплён и требует регулярного `pip install -U yt-dlp`.
-
-### Системные ограничения сервиса на VPS:
-*   В сервисе `ytdlp-web.service` жестко ограничены ресурсы (т.к. сервер имеет 1 CPU / 1GB RAM):
-    *   `MemoryMax=350M`
-    *   `CPUQuota=70%`
-    *   Временные файлы пишутся в `/tmp` и очищаются автоматически после завершения стриминга (через `BackgroundTask`).
+## 3. Architecture & Invariants
+* **Single Responsibility**: Dedicated yt-dlp downloader. No extra modules or tabs.
+* **Asynchronous Jobs**: Downloads use `POST /api/jobs` -> poll `GET /api/jobs/{id}` -> download `GET /api/jobs/{id}/file` to eliminate Cloudflare 524 timeouts.
+* **No File Storage**: Temporary session files are strictly deleted immediately after client streaming (`BackgroundTask`) and through hourly stale sweep.
+* **Authentication**: Secret key in `config.toml`, HMAC comparison, IP rate limiting (via `CF-Connecting-IP`), signed session cookie bound to key hash.
+* **Concurrency**: Strictly 1 concurrent active download semaphore on the server to prevent OOM on 1GB RAM.

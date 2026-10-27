@@ -1,23 +1,25 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 .pytest_cache/
 venv/
 .venv/
 env/
 
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Secrets and Local Config
+config.toml
+cookies.txt
+*.session
+*.session-journal
 
-# OS-specific
-.DS_Store
-Thumbs.db
+# Runtime and Temp
+temp/
+ytdlp-env/
+ytdlp-env-prev/
 
-# Локальные бэкапы и выгрузки — дубли проекта, в репозитории им не место
+# Legacy and Backups
 exported/
 static.bak-*/
+.DS_Store
+Thumbs.db
