@@ -1,0 +1,8 @@
+[Unit]
+Description=toolstrix yt-dlp auto-updater with smoke-test and rollback
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/toolstrix/deploy/update-ytdlp.sh
