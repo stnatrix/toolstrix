@@ -20,9 +20,11 @@ ln -sf /etc/nginx/sites-available/toolstrix.conf /etc/nginx/sites-enabled/toolst
 nginx -t
 systemctl reload nginx
 
-echo "Disabling legacy ytdlp-web service..."
+echo "Disabling legacy ytdlp-web service and updater..."
 systemctl stop ytdlp-web 2>/dev/null || true
 systemctl disable ytdlp-web 2>/dev/null || true
+systemctl stop ytdlp-update.timer 2>/dev/null || true
+systemctl disable ytdlp-update.timer 2>/dev/null || true
 
 echo "Cutover complete. tools.stnatrix.space is now serving toolstrix 2.0."
 EOF
@@ -36,7 +38,7 @@ id -u ytdlpweb >/dev/null 2>&1 || useradd -r -s /usr/sbin/nologin -d /opt/toolst
 mkdir -p $TARGET_DIR
 "
 
-rsync -avz --delete \
+rsync -avz \
     --exclude="config.toml" \
     --exclude=".venv" \
     --exclude="venv" \
@@ -58,16 +60,6 @@ fi
 
 ./venv/bin/pip install --no-cache-dir -r requirements.txt
 
-if [ ! -f "config.toml" ]; then
-    RAND_KEY=$(openssl rand -hex 16)
-    RAND_SESSION=$(openssl rand -hex 32)
-    sed -e "s/change_me_secret_key/$RAND_KEY/" \
-        -e "s/change_me_session_secret/$RAND_SESSION/" \
-        config.example.toml > config.toml
-    echo "Generated new /opt/toolstrix/config.toml with secure random keys."
-    echo "Access Key: $RAND_KEY"
-fi
-
 chmod +x deploy/*.sh
 chown -R ytdlpweb:ytdlpweb /opt/toolstrix
 
@@ -76,6 +68,25 @@ cp deploy/toolstrix-update.service /etc/systemd/system/toolstrix-update.service
 cp deploy/toolstrix-update.timer /etc/systemd/system/toolstrix-update.timer
 
 systemctl daemon-reload
+
+if [ ! -f "config.toml" ]; then
+    echo "================================================================="
+    echo "NOTICE: /opt/toolstrix/config.toml does not exist yet."
+    echo "Base files and virtual environment are ready."
+    echo "Please create /opt/toolstrix/config.toml from config.example.toml:"
+    echo "  cp /opt/toolstrix/config.example.toml /opt/toolstrix/config.toml"
+    echo "  chown ytdlpweb:ytdlpweb /opt/toolstrix/config.toml"
+    echo "  chmod 600 /opt/toolstrix/config.toml"
+    echo "Then start the service with:"
+    echo "  systemctl enable --now toolstrix"
+    echo "  systemctl enable --now toolstrix-update.timer"
+    echo "================================================================="
+    exit 0
+fi
+
+chown ytdlpweb:ytdlpweb config.toml
+chmod 600 config.toml
+
 systemctl enable --now toolstrix
 systemctl enable --now toolstrix-update.timer
 systemctl restart toolstrix
