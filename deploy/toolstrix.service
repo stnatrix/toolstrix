@@ -11,7 +11,8 @@ ExecStart=/opt/toolstrix/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8098 
 Restart=on-failure
 RestartSec=5
 
-MemoryMax=350M
+MemoryHigh=350M
+MemoryMax=450M
 CPUQuota=70%
 
 NoNewPrivileges=true
