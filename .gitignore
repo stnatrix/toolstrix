@@ -23,3 +23,7 @@ exported/
 static.bak-*/
 .DS_Store
 Thumbs.db
+
+# Hosted Sites
+/sites/
+
