@@ -7,10 +7,14 @@ description: Comprehensive knowledge base, architecture, and operational runbook
 
 ## 0. Current Project Status
 * **toolstrix 2.0**: Live and fully operational at `https://tools.stnatrix.space` (port 8098, cgroups v2 memory bounds 350M/450M, isolated subprocess downloader).
+* **stnatrix.space Portfolio**: Live at `https://stnatrix.space` (and `www.stnatrix.space`), central hub linking to all active projects (`toolstrix` and `ahktrix`), served directly by Nginx from `/var/www/sites/stnatrix`.
 * **ahktrix Passport**: Co-hosted static landing page at `https://ahk.stnatrix.space` served by Nginx from `/var/www/sites/ahktrix` with zero runtime memory footprint.
 * **Local Workspace Structure**:
   * `vps/`: Core toolstrix backend, frontend (`web/`), systemd services, and deploy configs (`stnatrix/toolstrix.git`).
-  * `vps/sites/`: Local staging directory for satellite static sites (e.g., `sites/ahktrix-passport/`). Strictly ignored in `vps/.gitignore` (`/sites/`) to keep toolstrix repository clean.
+  * `vps/sites/`: Local staging directory for satellite static sites:
+    * `sites/stnatrix-space/`: Portfolio hub (`stnatrix.space`)
+    * `sites/ahktrix-passport/`: ahktrix landing page (`ahk.stnatrix.space`)
+  Strictly ignored in `vps/.gitignore` (`/sites/`) to keep toolstrix repository clean.
 * **Design System Invariant**: 1:1 visual identity across apps — compact 480px cards, dark theme (`#141312` page, `#1d1b19` card, `#25221f` tiles, `#d49b6a` accent), local Nunito fonts (no Google trackers), and low muffled clicks via Web Audio API.
 * **Git Status**: Fully cleaned history with verified identity `stnatrix <natrix852@gmail.com>`. All commits properly linked to GitHub avatar.
 
@@ -30,11 +34,13 @@ description: Comprehensive knowledge base, architecture, and operational runbook
 * Nginx virtualhost: `/etc/nginx/sites-available/toolstrix.conf` (symlinked into `sites-enabled/`)
 * System user: `ytdlpweb` (unprivileged, `/usr/sbin/nologin`)
 * Temporary download dir: `/tmp/toolstrix` (strictly owned by `ytdlpweb:ytdlpweb`)
-* Static sites root: `/var/www/sites/` (e.g. `/var/www/sites/ahktrix`, owned by `www-data:www-data`, permissions `755`)
+* Static sites root: `/var/www/sites/` (e.g. `/var/www/sites/stnatrix`, `/var/www/sites/ahktrix`, owned by `www-data:www-data`, permissions `755`)
 
 ## 2.1 Co-Hosted Static Sites Architecture
-* Static sites (like `ahk.stnatrix.space`) run purely via Nginx without background backend daemons to conserve RAM on the 1GB VPS.
-* Nginx vhosts live in `/etc/nginx/sites-available/` and are symlinked to `/etc/nginx/sites-enabled/`.
+* Static sites (`stnatrix.space`, `ahk.stnatrix.space`) run purely via Nginx without background backend daemons to conserve RAM on the 1GB VPS.
+* Nginx vhosts:
+  * `/etc/nginx/sites-available/stnatrix.conf` -> `/etc/nginx/sites-enabled/stnatrix.conf`
+  * `/etc/nginx/sites-available/ahk.stnatrix.conf` -> `/etc/nginx/sites-enabled/ahk.stnatrix.conf`
 * Traffic is proxied through Cloudflare with gzip compression, 7-day asset caching, and security headers enabled.
 
 ## 3. Resource Constraints & Linux cgroups v2
