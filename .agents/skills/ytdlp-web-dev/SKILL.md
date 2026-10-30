@@ -7,13 +7,16 @@ description: Comprehensive knowledge base, architecture, and operational runbook
 
 ## 0. Current Project Status
 * **toolstrix 2.0**: Live and fully operational at `https://tools.stnatrix.space` (port 8098, cgroups v2 memory bounds 350M/450M, isolated subprocess downloader).
+  * Repository: [`stnatrix/toolstrix`](https://github.com/stnatrix/toolstrix)
 * **stnatrix.space Portfolio**: Live at `https://stnatrix.space` (and `www.stnatrix.space`), central hub linking to all active projects (`toolstrix` and `ahktrix`), served directly by Nginx from `/var/www/sites/stnatrix`.
+  * Repository: [`stnatrix/natrix`](https://github.com/stnatrix/natrix) (branch `main`, tag `v1.0.0`).
 * **ahktrix Passport**: Co-hosted static landing page at `https://ahk.stnatrix.space` served by Nginx from `/var/www/sites/ahktrix` with zero runtime memory footprint.
+  * Repository: [`stnatrix/ahktrix`](https://github.com/stnatrix/ahktrix).
 * **Local Workspace Structure**:
   * `vps/`: Core toolstrix backend, frontend (`web/`), systemd services, and deploy configs (`stnatrix/toolstrix.git`).
   * `vps/sites/`: Local staging directory for satellite static sites:
-    * `sites/stnatrix-space/`: Portfolio hub (`stnatrix.space`)
-    * `sites/ahktrix-passport/`: ahktrix landing page (`ahk.stnatrix.space`)
+    * `sites/stnatrix-space/`: Portfolio hub (`stnatrix.space`, repo `stnatrix/natrix`)
+    * `sites/ahktrix-passport/`: ahktrix landing page (`ahk.stnatrix.space`, repo `stnatrix/ahktrix`)
   Strictly ignored in `vps/.gitignore` (`/sites/`) to keep toolstrix repository clean.
 * **Design System Invariant**: 1:1 visual identity across apps — compact 480px cards, dark theme (`#141312` page, `#1d1b19` card, `#25221f` tiles, `#d49b6a` accent), local Nunito fonts (no Google trackers), and low muffled clicks via Web Audio API.
 * **Git Status**: Fully cleaned history with verified identity `stnatrix <natrix852@gmail.com>`. All commits properly linked to GitHub avatar.
@@ -66,3 +69,7 @@ description: Comprehensive knowledge base, architecture, and operational runbook
   * Global identity: `user.name=stnatrix`, `user.email=natrix852@gmail.com`.
   * Never set local `[user]` sections in `.git/config` with dummy addresses (like `@example.com`).
   * Never include tokens in `remote.origin.url`.
+* **Git Contributor & History Cleanup Gotchas**:
+  * **Co-Authored-By Trailers**: GitHub parses `Co-Authored-By: Name <email>` in commit messages and adds the referenced account to repository contributors. Never include AI assistant trailers.
+  * **Rewriting Multi-Branch Repositories**: When rewriting commit history, always include all branch heads and tags (`git filter-branch ... --tag-name-filter cat -- master legacy --tags`). Leaving an old branch head (e.g. `origin/legacy`) un-rewritten keeps old commits and contributors alive on GitHub.
+  * **GitHub Contributors Cache**: After force-pushing rewritten branches (`git push --force origin master legacy --tags`), GitHub's web UI contributors graph/sidebar updates asynchronously via background queue (TTL 15–60 min), while the API reflects cleaned commit authors immediately.
